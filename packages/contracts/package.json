@@ -36,7 +36,7 @@
     "@machinomy/types-truffle-contract": "^0.0.4",
     "@machinomy/types-truffle-deployer": "^0.0.3",
     "@machinomy/types-web3": "^0.0.12",
-    "@machinomy/wraptso": "^0.0.14",
+    "@machinomy/wraptso": "^0.0.15",
     "@types/chai-as-promised": "^7.1.0",
     "@types/mocha": "^5.2.5",
     "@types/node": "^10.12.12",

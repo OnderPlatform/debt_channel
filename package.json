@@ -1,0 +1,22 @@
+{
+  "name": "debt_channel",
+  "private": true,
+  "version": "1.0.0",
+  "license": "UNLICENSED",
+  "workspaces": {
+    "packages": [
+      "packages/*"
+    ]
+  },
+  "scripts": {
+    "build": "wsrun build $PKG --fast-exit -r --serial",
+    "lint": "wsrun lint $PKG",
+    "test": "wsrun test $PKG",
+    "coverage": "wsrun coverage $PKG",
+    "bootstrap": "lerna bootstrap"
+  },
+  "devDependencies": {
+    "lerna": "^3.6.0",
+    "wsrun": "^2.2.0"
+  }
+}

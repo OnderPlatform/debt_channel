@@ -25,10 +25,11 @@ contract Holding is Ownable, SignerRole {
     function addDebt (address _destination, address _token, uint256 _amount, bytes memory _sigMine, bytes memory _sigOther) public {
         debts[_destination][_token] = debts[_destination][_token].add(_amount);
         bytes32 digest = ECDSA.toEthSignedMessageHash(addDebtDigest(_destination, _token, _amount));
-        address recovered = ECDSA.recover(digest, _sigMine);
-        require(isSigner(recovered), "Should be signed by me");
-        // check if sigMe is ok
-        // check if sigOther is ok
+        address recoveredMine = ECDSA.recover(digest, _sigMine);
+        require(isSigner(recoveredMine), "Should be signed by me");
+        address recoveredOther = ECDSA.recover(digest, _sigOther);
+        Holding other = Holding(_destination);
+        require(other.isSigner(recoveredOther), "Should be signed by other");
         emit DidAddDebt(_destination, _token, _amount);
     }
 

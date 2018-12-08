@@ -1,18 +1,15 @@
 import { BigNumber } from 'bignumber.js'
 
 export interface Debt {
-  nonce: BigNumber,
   amount: BigNumber,
   collectionAfter: BigNumber
 }
 
 export namespace Debt {
-  export function fromContract(r: [BigNumber, BigNumber, BigNumber]) {
-    const nonce = r[0]
-    const collectionAfter = r[1]
-    const amount = r[2]
+  export function fromContract(r: [BigNumber, BigNumber]) {
+    const collectionAfter = r[0]
+    const amount = r[1]
     return {
-      nonce,
       amount,
       collectionAfter
     }

@@ -10,7 +10,6 @@ contract Holding is Ownable, SignerRole {
     using SafeMath for uint256;
 
     struct Debt {
-        uint32 nonce;
         uint256 collectionAfter;
         uint256 amount;
     }
@@ -32,12 +31,10 @@ contract Holding is Ownable, SignerRole {
         address _destination,
         address _token,
         uint256 _amount,
-        uint32 _nonce,
-        uint256 _collectionAfter,
         bytes memory _sigMine,
         bytes memory _sigOther
     ) public {
-        bytes32 digest = ECDSA.toEthSignedMessageHash(addDebtDigest(_destination, _token, _amount, _nonce, _collectionAfter));
+        bytes32 digest = ECDSA.toEthSignedMessageHash(addDebtDigest(_destination, _token, _amount));
         address recoveredMine = ECDSA.recover(digest, _sigMine);
         require(isSigner(recoveredMine), "Should be signed by me");
 
@@ -45,12 +42,11 @@ contract Holding is Ownable, SignerRole {
         Holding other = Holding(_destination);
         require(other.isSigner(recoveredOther), "Should be signed by other");
 
-        require(canAddDebt(_destination, _token, _nonce), "Can not override existing");
+        require(debts[_destination][_token].collectionAfter == 0, "Can not override existing");
 
         debts[_destination][_token] = Debt({
-            nonce: _nonce,
             amount: _amount,
-            collectionAfter: _collectionAfter
+            collectionAfter: now + 48 hours
         });
 
         emit DidAddDebt(_destination, _token, _amount);
@@ -59,19 +55,8 @@ contract Holding is Ownable, SignerRole {
     function addDebtDigest (
         address _destination,
         address _token,
-        uint256 _amount,
-        uint32 _nonce,
-        uint256 _collectionAfter
+        uint256 _amount
     ) public pure returns (bytes32) {
-        return keccak256(abi.encode('ad', _destination, _token, _amount, _nonce, _collectionAfter));
-    }
-
-    function canAddDebt (address _destination, address _token, uint32 _nonce) public view returns (bool) {
-        Debt memory current = debts[_destination][_token];
-        if (current.nonce == 0) {
-            return true;
-        } else {
-            return _nonce > current.nonce && now < current.collectionAfter;
-        }
+        return keccak256(abi.encode('ad', _destination, _token, _amount));
     }
 }

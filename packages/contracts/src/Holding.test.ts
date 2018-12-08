@@ -29,6 +29,14 @@ contract('Holding', accounts => {
     instance = await Holding.new()
   })
 
+  describe('constructor', () => {
+    specify('set owner', async () => {
+      const holding = await Holding.new({from: sender})
+      const owner = await holding.owner()
+      assert.equal(owner, sender)
+    })
+  })
+
   describe('.deposit', () => {
     specify('emit DidOpen event', async () => {
       await token.approve(instance.address, 1000, {from: sender})

@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig",
+  "compilerOptions": {
+    "sourceRoot": "src/",
+    "outDir": "dist/",
+    "types": [
+      "@machinomy/types-truffle-deployer",
+      "@machinomy/types-truffle",
+      "@machinomy/types-truffle-contract",
+      "@machinomy/types-ethereumjs-units",
+      "@machinomy/types-ethereumjs-util",
+      "@machinomy/types-eth-sig-util",
+      "@machinomy/types-web3",
+      "@types/mocha",
+      "@types/node"
+    ]
+  },
+  "include": [
+    "src/**/*"
+  ]
+}

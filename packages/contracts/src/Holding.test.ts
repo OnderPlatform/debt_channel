@@ -63,12 +63,13 @@ contract('Holding', accounts => {
 
   describe('.addDebt', () => {
     const amount = 10
+    const settlementPeriod = 0
 
     specify('add debt', async () => {
       const digest = await instanceA.addDebtDigest(instanceB.address, token.address, amount)
       const signatureA = await signature(ALICE, digest)
       const signatureB = await signature(BOB, digest)
-      const tx = await instanceA.addDebt(instanceB.address, token.address, amount, signatureA, signatureB)
+      const tx = await instanceA.addDebt(instanceB.address, token.address, amount, settlementPeriod, signatureA, signatureB)
       assert(contracts.Holding.isDidAddDebtEvent(tx.logs[0]))
       const rawDebt = await instanceA.debts(instanceB.address, token.address)
       const debt = Debt.fromContract(rawDebt)
@@ -79,7 +80,7 @@ contract('Holding', accounts => {
     specify('pass if sigMine is incorrect', async () => {
       const digest = await instanceA.addDebtDigest(instanceB.address, token.address, amount)
       const signatureB = await signature(BOB, digest)
-      return assert.isRejected(instanceA.addDebt(instanceB.address, token.address, amount, signatureB, signatureB))
+      return assert.isRejected(instanceA.addDebt(instanceB.address, token.address, amount, settlementPeriod, signatureB, signatureB))
     })
 
     specify('ok if signed by my delegate key', async () => {
@@ -87,7 +88,7 @@ contract('Holding', accounts => {
       const digest = await instanceA.addDebtDigest(instanceB.address, token.address, amount)
       const signatureA = await signature(DELEGATE_ALICE, digest)
       const signatureB = await signature(BOB, digest)
-      const tx = await instanceA.addDebt(instanceB.address, token.address, amount, signatureA, signatureB)
+      const tx = await instanceA.addDebt(instanceB.address, token.address, amount, settlementPeriod, signatureA, signatureB)
       assert(contracts.Holding.isDidAddDebtEvent(tx.logs[0]))
       const rawDebt = await instanceA.debts(instanceB.address, token.address)
       const debt = Debt.fromContract(rawDebt)
@@ -100,7 +101,7 @@ contract('Holding', accounts => {
       const digest = await instanceA.addDebtDigest(instanceB.address, token.address, amount)
       const signatureA = await signature(ALICE, digest)
       const signatureB = await signature(DELEGATE_BOB, digest)
-      const tx = await instanceA.addDebt(instanceB.address, token.address, amount, signatureA, signatureB)
+      const tx = await instanceA.addDebt(instanceB.address, token.address, amount, settlementPeriod, signatureA, signatureB)
       assert(contracts.Holding.isDidAddDebtEvent(tx.logs[0]))
       const rawDebt = await instanceA.debts(instanceB.address, token.address)
       const debt = Debt.fromContract(rawDebt)
@@ -111,14 +112,14 @@ contract('Holding', accounts => {
     specify('pass if sigOther is incorrect', async () => {
       const digest = await instanceA.addDebtDigest(instanceB.address, token.address, amount)
       const signatureA = await signature(ALICE, digest)
-      return assert.isRejected(instanceA.addDebt(instanceB.address, token.address, amount, signatureA, signatureA))
+      return assert.isRejected(instanceA.addDebt(instanceB.address, token.address, amount, settlementPeriod, signatureA, signatureA))
     })
 
     specify('can not override', async () => {
       const digest1 = await instanceA.addDebtDigest(instanceB.address, token.address, amount)
       const signatureA = await signature(ALICE, digest1)
       const signatureB = await signature(BOB, digest1)
-      await instanceA.addDebt(instanceB.address, token.address, amount, signatureA, signatureB)
+      await instanceA.addDebt(instanceB.address, token.address, amount, settlementPeriod, signatureA, signatureB)
       const rawDebt = await instanceA.debts(instanceB.address, token.address)
       const debt = Debt.fromContract(rawDebt)
       assert.equal(debt.amount.toString(), amount.toString())
@@ -128,7 +129,55 @@ contract('Holding', accounts => {
       const digest2 = await instanceA.addDebtDigest(instanceB.address, token.address, amount2)
       const signatureA2 = await signature(ALICE, digest2)
       const signatureB2 = await signature(BOB, digest2)
-      return assert.isRejected(instanceA.addDebt(instanceB.address, token.address, amount2, signatureA2, signatureB2))
+      return assert.isRejected(instanceA.addDebt(instanceB.address, token.address, amount2, settlementPeriod, signatureA2, signatureB2))
     })
+  })
+
+  describe('collect', () => {
+    const amount = 10
+    const settlementPeriod = 0
+
+    specify('collect', async () => {
+      await token.approve(instanceA.address, 1000, {from: ALICE})
+      await instanceA.deposit(token.address, 10, {from: ALICE})
+      const digest = await instanceA.addDebtDigest(instanceB.address, token.address, amount)
+      const signatureA = await signature(ALICE, digest)
+      const signatureB = await signature(BOB, digest)
+      await instanceA.addDebt(instanceB.address, token.address, amount, settlementPeriod, signatureA, signatureB)
+      const collectDigest = await instanceA.collectDigest(token.address)
+      const collectSignature = await signature(BOB, collectDigest)
+
+      const balanceBefore = await token.balanceOf(instanceB.address)
+      const holdingBefore = await instanceB.deposits(token.address)
+      let tx = await instanceA.collect(instanceB.address, token.address, collectSignature)
+      assert(contracts.Holding.isDidCloseEvent(tx.logs[0]))
+      assert(contracts.Holding.isDidCollectEvent(tx.logs[1]))
+      const balanceAfter = await token.balanceOf(instanceB.address)
+
+      assert.equal(balanceAfter.sub(balanceBefore).toString(), amount.toString())
+
+
+      const holdingAfter = await instanceB.deposits(token.address)
+      assert.equal(holdingAfter.sub(holdingBefore).toString(), amount.toString())
+    })
+  })
+
+  specify('withdraw', async () => {
+    await token.approve(instanceA.address, 1000, {from: ALICE})
+    await instanceA.deposit(token.address, 100, {from: ALICE})
+    const tokenBalance = await token.balanceOf(instanceA.address)
+    assert.equal(tokenBalance.toString(), '100')
+    const holdingBalance = await instanceA.deposits(token.address)
+    assert.equal(holdingBalance.toString(), '100')
+
+    const withdrawal = 10
+    const digest = await instanceA.withdrawDigest(BOB, token.address, withdrawal)
+    const signatureA = await signature(ALICE, digest)
+    const balanceBefore = await token.balanceOf(BOB)
+    await instanceA.withdraw(BOB, token.address, withdrawal, signatureA)
+    const balanceAfter = await token.balanceOf(BOB)
+    assert.equal(balanceAfter.sub(balanceBefore).toString(), withdrawal.toString())
+    const holdingBalanceAfter = await instanceA.deposits(token.address)
+    assert.equal(holdingBalanceAfter.sub(holdingBalance).toString(), (-1 * withdrawal).toString())
   })
 })

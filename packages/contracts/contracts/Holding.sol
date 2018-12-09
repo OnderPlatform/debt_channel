@@ -19,6 +19,9 @@ contract Holding is Ownable, SignerRole {
 
     event DidDeposit(address indexed token, uint256 amount);
     event DidAddDebt(address indexed destination, address indexed token, uint256 amount);
+    event DidCollect(address indexed destination, address indexed token, uint256 amount);
+    event DidClose(address indexed destination, address indexed token, uint256 amount);
+    event DidWithdraw(address indexed destination, address indexed token, uint256 amount);
 
     function deposit (address _token, uint256 _amount) public {
         IERC20 token = IERC20(_token);
@@ -27,10 +30,45 @@ contract Holding is Ownable, SignerRole {
         emit DidDeposit(_token, _amount);
     }
 
+    function withdraw (address _destination, address _token, uint256 _amount, bytes memory _signature) public {
+        IERC20 token = IERC20(_token);
+        bytes32 digest = ECDSA.toEthSignedMessageHash(withdrawDigest(_destination, _token, _amount));
+        address recovered = ECDSA.recover(digest, _signature);
+        require(isSigner(recovered), "Should be signed");
+        require(token.transfer(_destination, _amount), "Can not transfer token");
+        deposits[_token] = deposits[_token].sub(_amount);
+        emit DidWithdraw(_destination, _token, _amount);
+    }
+
+    function collect (address _destination, address _token, bytes memory _signature) public {
+        Holding other = Holding(_destination);
+        bytes32 digest = ECDSA.toEthSignedMessageHash(collectDigest(_token));
+        address recoveredOther = ECDSA.recover(digest, _signature);
+        require(other.isSigner(recoveredOther), "Should be signed by other");
+
+        Debt memory debt = debts[_destination][_token];
+        IERC20 token = IERC20(_token);
+        uint256 amountToSend;
+        if (debt.amount > deposits[_token]) {
+            amountToSend = deposits[_token];
+        } else {
+            amountToSend = debt.amount;
+            emit DidClose(_destination, _token, amountToSend);
+        }
+
+        debt.amount = debt.amount.sub(amountToSend);
+        deposits[_token] = deposits[_token].sub(amountToSend);
+        emit DidCollect(_destination, _token, deposits[_token]);
+
+        require(token.approve(_destination, amountToSend), "Can not approve token transfer");
+        other.deposit(_token, amountToSend);
+    }
+
     function addDebt (
         address _destination,
         address _token,
         uint256 _amount,
+        uint256 _settlementPeriod,
         bytes memory _sigMine,
         bytes memory _sigOther
     ) public {
@@ -46,10 +84,18 @@ contract Holding is Ownable, SignerRole {
 
         debts[_destination][_token] = Debt({
             amount: _amount,
-            collectionAfter: now + 48 hours
+            collectionAfter: now + _settlementPeriod
         });
 
         emit DidAddDebt(_destination, _token, _amount);
+    }
+
+    function collectDigest (address _token) public pure returns (bytes32) {
+        return keccak256(abi.encode("co", _token));
+    }
+
+    function withdrawDigest (address _destination, address _token, uint256 _amount) public pure returns (bytes32) {
+        return keccak256(abi.encode("wi", _destination, _token, _amount));
     }
 
     function addDebtDigest (
@@ -57,6 +103,6 @@ contract Holding is Ownable, SignerRole {
         address _token,
         uint256 _amount
     ) public pure returns (bytes32) {
-        return keccak256(abi.encode('ad', _destination, _token, _amount));
+        return keccak256(abi.encode("ad", _destination, _token, _amount));
     }
 }

@@ -180,4 +180,22 @@ contract('Holding', accounts => {
     const holdingBalanceAfter = await instanceA.deposits(token.address)
     assert.equal(holdingBalanceAfter.sub(holdingBalance).toString(), (-1 * withdrawal).toString())
   })
+
+  specify('forgive', async () => {
+    await token.approve(instanceA.address, 1000, {from: ALICE})
+    await instanceA.deposit(token.address, 100, {from: ALICE})
+    const tokenBalance = await token.balanceOf(instanceA.address)
+    assert.equal(tokenBalance.toString(), '100')
+    const holdingBalance = await instanceA.deposits(token.address)
+    assert.equal(holdingBalance.toString(), '100')
+
+    const digest = await instanceA.forgiveDigest(instanceB.address, token.address)
+    const signatureA = await signature(ALICE, digest)
+    const signatureB = await signature(BOB, digest)
+    await instanceA.forgive(instanceB.address, token.address, signatureA, signatureB)
+    const rawDebt = await instanceA.debts(instanceB.address, token.address)
+    const debt = Debt.fromContract(rawDebt)
+    assert.equal(debt.amount.toString(), '0')
+    assert.equal(debt.collectionAfter.toString(), '0')
+  })
 })

@@ -22,6 +22,7 @@ contract Holding is Ownable, SignerRole {
     event DidCollect(address indexed destination, address indexed token, uint256 amount);
     event DidClose(address indexed destination, address indexed token, uint256 amount);
     event DidWithdraw(address indexed destination, address indexed token, uint256 amount);
+    event DidForgive(address indexed destination, address indexed token, uint256 amount);
 
     function deposit (address _token, uint256 _amount) public {
         IERC20 token = IERC20(_token);
@@ -47,6 +48,7 @@ contract Holding is Ownable, SignerRole {
         require(other.isSigner(recoveredOther), "Should be signed by other");
 
         Debt memory debt = debts[_destination][_token];
+        require(debt.collectionAfter >= block.timestamp, "Can only collect existing stuff");
         IERC20 token = IERC20(_token);
         uint256 amountToSend;
         if (debt.amount > deposits[_token]) {
@@ -84,10 +86,33 @@ contract Holding is Ownable, SignerRole {
 
         debts[_destination][_token] = Debt({
             amount: _amount,
-            collectionAfter: now + _settlementPeriod
+            collectionAfter: block.timestamp + _settlementPeriod
         });
 
         emit DidAddDebt(_destination, _token, _amount);
+    }
+
+    function forgive (
+        address _destination,
+        address _token,
+        bytes memory _sigMine,
+        bytes memory _sigOther
+    ) public {
+        Holding other = Holding(_destination);
+        bytes32 digest = ECDSA.toEthSignedMessageHash(forgiveDigest(_destination, _token));
+        address recoveredOther = ECDSA.recover(digest, _sigOther);
+        require(other.isSigner(recoveredOther), "Should be signed by other");
+
+        address recoveredMine = ECDSA.recover(digest, _sigMine);
+        require(isSigner(recoveredMine), "Should be signed by me");
+
+        emit DidForgive(_destination, _token, debts[_destination][_token].amount);
+
+        delete debts[_destination][_token];
+    }
+
+    function forgiveDigest (address _destination, address _token) public pure returns (bytes32) {
+        return keccak256(abi.encode("fo", _destination, _token));
     }
 
     function collectDigest (address _token) public pure returns (bytes32) {

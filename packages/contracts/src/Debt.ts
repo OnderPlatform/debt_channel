@@ -1,8 +1,11 @@
 import { BigNumber } from 'bignumber.js'
 
 export interface Debt {
-  amount: BigNumber,
+  destination: string,
+  token: string,
   collectionAfter: BigNumber
+  amount: BigNumber,
+  salt: string
 }
 
 export namespace Debt {

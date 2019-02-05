@@ -9,12 +9,18 @@ export interface Debt {
 }
 
 export namespace Debt {
-  export function fromContract(r: [BigNumber, BigNumber]) {
-    const collectionAfter = r[0]
-    const amount = r[1]
+  export function fromContract(r: [string, string, BigNumber, BigNumber, BigNumber]) {
+    const destination = r[0]
+    const token = r[1]
+    const collectionAfter = r[2]
+    const amount = r[3]
+    const salt = r[4]
     return {
+      destination,
+      token,
+      collectionAfter,
       amount,
-      collectionAfter
+      salt
     }
   }
 }

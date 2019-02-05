@@ -1,6 +1,6 @@
 const HDWalletProvider = require('@machinomy/hdwallet-provider').default
 const MNEMONIC = process.env.MNEMONIC
-const GAS_LIMIT = 2700000
+const GAS_LIMIT = 4700000
 
 module.exports = {
   networks: {

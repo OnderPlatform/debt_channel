@@ -11,30 +11,30 @@ contract Holding is Ownable, SignerRole  {
     using SafeMath for uint256;
 
     enum State {
-        Active,     // Usual case, all operations are permitted
-        Retired    // End of life of contract state, contract will terminated soon.
+        Active,      // Usual case, all operations are permitted
+        Retired,     // End of life of contract state, contract will terminated soon.
+        Dismissed    // No new debts could be added. One could only repay the existing debts.
     }
 
     struct Debt {
         address destination;     // Receiver address of debt
         address token;           // Currency of debt
-        uint256 collectionAfter; //
+        uint256 collectionAfter; // Creditor can claim debt after "collectionAfter" seconds
         uint256 amount;          // Amount of debt
         uint16  salt;            // ID of debt
     }
 
     State public _currentState;
     address public _owner;
+    address public _clearingHouse;
     uint256 public _retiringPeriod;
     uint256 public _retiringUntil;
-    address public _clearingHouse;
-    bool public _halt;
-
+    uint256 public _debtsSize;
+    uint256 public _balanceSize;
 
     mapping (bytes32 => Debt) public debts;
-    // mapping (address of token contract) => (balance)
+    // mapping (address of token contract) => (balance in tokens)
     mapping (address => uint256) public balance;
-    mapping (address => bool) public owners;
 
     event DidDeposit(address indexed token, uint256 amount);
     event DidAddDebt(address indexed destination, address indexed token, uint256 amount);
@@ -43,6 +43,7 @@ contract Holding is Ownable, SignerRole  {
     event DidWithdraw(address indexed destination, address indexed token, uint256 amount);
     event DidForgive(address indexed destination, address indexed token, uint256 amount);
     event DidRetired();
+    event DidStop();
 
     /*** ACTIONS AND CONSTRAINTS ***/
 
@@ -53,25 +54,29 @@ contract Holding is Ownable, SignerRole  {
     constructor (address owner, uint256 retiringPeriod, address clearingHouse) public {
         _owner = owner;
         _retiringPeriod = retiringPeriod;
+        _retiringUntil = 0;
         _clearingHouse = clearingHouse;
-        _halt = false;
         _currentState = State.Active;
+        _debtsSize = 0;
     }
 
     /// @notice Get current contract lifecycle stage.
     /// @return { State.Active OR State.Retire OR State.Dismissed
-    function currentState () public returns (State) {
+    function currentState () public view returns (State) {
         return _currentState;
     }
 
     /// @notice Prepare contract for termination. Starts a retiring period.
     /// After retiring period no new debts could be added. One could only repay the existing debts.
-    /// @param _signature Signature on
+    /// @param _signature Signature of contract owner
     function retire (bytes memory _signature) public {
-        require(_currentState == State.Active, "Must be in Active state.");
+        if (_retiringUntil != 0 && block.timestamp >= _retiringUntil) {
+            _currentState = State.Dismissed;
+        }
+        require(_currentState == State.Active, "retire: Must be in Active state");
         bytes32 digest = ECDSA.toEthSignedMessageHash(retireDigest(address(this)));
         address recovered = ECDSA.recover(digest, _signature);
-        require(isSigner(recovered), "Should be signed ");
+        require(isSigner(recovered), "retire: Should be signed");
 
         _retiringUntil = block.timestamp + _retiringPeriod;
         _currentState = State.Retired;
@@ -82,43 +87,79 @@ contract Holding is Ownable, SignerRole  {
     /// @notice Prepare contract for termination. Starts a retiring period.
     //  After retiring period no new debts could be added. One could only repay the existing debts.
     function stop() public {
-        require(_currentState == State.Retired, "Must be in Retired state.");
-        require(block.timestamp > _retiringUntil, "Retiring period still proceed.");
-//        require(balance)
-        // debts are cleared
-        // balance is null
+        if (_retiringUntil != 0 && block.timestamp >= _retiringUntil) {
+            _currentState = State.Dismissed;
+        }
+        require(_currentState == State.Dismissed, "stop: Must be in Dismissed state");
+        require(_debtsSize == 0, "stop: There are some debts exists in contract");
+        require(_balanceSize == 0, "stop: Need to have null balances for using stop method");
+
+        emit DidStop();
 
         selfdestruct(address(msg.sender));
+
     }
 
+    /// @notice Add deposit with value _amount in currency _token
+    /// @param _token Currency of deposit
+    /// @param _amount Value of deposit
     function deposit (address _token, uint256 _amount) public {
+        if (_retiringUntil != 0 && block.timestamp >= _retiringUntil) {
+            _currentState = State.Dismissed;
+        }
         IERC20 token = IERC20(_token);
-        require(token.transferFrom(msg.sender, address(this), _amount), "Unable to transfer token to the contract");
+        require(token.transferFrom(msg.sender, address(this), _amount), "deposit: Unable to transfer token to the contract");
+        if (balance[_token] == 0) {
+            _balanceSize += 1;
+        }
+
         balance[_token] = balance[_token].add(_amount);
         emit DidDeposit(_token, _amount);
     }
 
+    /// @notice Transfer _amount of _token to _destination address.
+    /// @param _destination Destination of tokens
+    /// @param _token Currency of withdraw
+    /// @param _amount Value of withdraw
+    /// @param _signature Signature of contract owner (debtor) of withdrawDigest
     function withdraw (address _destination, address _token, uint256 _amount, bytes memory _signature) public {
+        require(_amount <= balance[_token], "withdraw: Trying to withdraw amount which exceeds current balance in specified token");
+        if (_retiringUntil != 0 && block.timestamp >= _retiringUntil) {
+            _currentState = State.Dismissed;
+        }
         IERC20 token = IERC20(_token);
         bytes32 digest = ECDSA.toEthSignedMessageHash(withdrawDigest(_destination, _token, _amount));
         address recovered = ECDSA.recover(digest, _signature);
-        require(isSigner(recovered), "Should be signed");
-        require(token.transfer(_destination, _amount), "Can not transfer token");
+        require(isSigner(recovered), "withdraw: Should be signed");
+        require(token.transfer(_destination, _amount), "withdraw: Can not transfer token");
         balance[_token] = balance[_token].sub(_amount);
+        if (balance[_token] == 0) {
+            _balanceSize -= 1;
+        }
+
         emit DidWithdraw(_destination, _token, _amount);
     }
 
+    /// @notice Claim the debt from debtor
+    /// @param _id ID of debt in debt mapping
+    /// @param _signature Signature of debtor of collectDigest
     function collectDebt (bytes32 _id, bytes memory _signature) public {
+        if (_retiringUntil != 0 && block.timestamp >= _retiringUntil) {
+            _currentState = State.Dismissed;
+        }
         Debt memory debt = debts[_id];
+        require(debt.collectionAfter != 0, "collectDebt: Debt with specified ID does not found");
         address destination = debt.destination;
+
         address tokenContract = debt.token;
-        Holding other = Holding(address(destination));
+        Holding other = Holding(destination);
 
         bytes32 digest = ECDSA.toEthSignedMessageHash(collectDigest(tokenContract));
         address recoveredOther = ECDSA.recover(digest, _signature);
-        require(other.isSigner(recoveredOther), "Should be signed by other");
 
-        require(debt.collectionAfter >= block.timestamp, "Can only collect existing stuff");
+        require(other.isSigner(recoveredOther), "collectDebt: Should be signed by other");
+
+        require(debt.collectionAfter <= block.timestamp, "collectDebt: Can only collect existing stuff");
         IERC20 token = IERC20(tokenContract);
         uint256 amountToSend;
         if (debt.amount > balance[tokenContract]) {
@@ -132,10 +173,18 @@ contract Holding is Ownable, SignerRole  {
         balance[tokenContract] = balance[tokenContract].sub(amountToSend);
         emit DidCollect(destination, tokenContract, balance[tokenContract]);
 
-        require(token.approve(destination, amountToSend), "Can not approve token transfer");
+        require(token.approve(destination, amountToSend), "collectDebt: Can not approve token transfer");
         other.deposit(tokenContract, amountToSend);
     }
 
+    /// @notice Add debt to contract
+    /// @param _destination Address of creditor
+    /// @param _token Currency of debt
+    /// @param _amount Value of debt
+    /// @param _salt ID of debt between creditor and debtor
+    /// @param _settlementPeriod Time in seconds after that creditor can claim to return debt
+    /// @param _sigOwner Signature of debtor
+    /// @param _sigCreditor Signature of creditor
     function addDebt (
         address _destination,
         address _token,
@@ -145,18 +194,21 @@ contract Holding is Ownable, SignerRole  {
         bytes memory _sigOwner,
         bytes memory _sigCreditor
     ) public {
-        require(block.timestamp < _retiringUntil, "Contract in dismissed state. Can not add new debt.");
-        bytes32 digest = ECDSA.toEthSignedMessageHash(addDebtDigest(_destination, _token, _amount));
+        if (_retiringUntil != 0 && block.timestamp >= _retiringUntil) {
+            _currentState = State.Dismissed;
+            require(block.timestamp <= _retiringUntil, "addDebt: Contract is in dismissed state. Can not add new debt");
+        }
+        bytes32 digest = ECDSA.toEthSignedMessageHash(addDebtDigest(_destination, _token, _amount, _settlementPeriod));
         address recoveredOwner = ECDSA.recover(digest, _sigOwner);
-        require(isSigner(recoveredOwner), "Should be signed by owner");
+        require(isSigner(recoveredOwner), "addDebt: Should be signed by owner");
 
         address recoveredCreditor = ECDSA.recover(digest, _sigCreditor);
         Holding creditor = Holding(_destination);
-        require(creditor.isSigner(recoveredCreditor), "Should be signed by creditor");
+        require(creditor.isSigner(recoveredCreditor), "addDebt: Should be signed by creditor");
 
         bytes32 debtID = debtIdentifier(_destination, _token, _salt);
 
-        require(debts[debtID].collectionAfter == 0, "Can not override existing");
+        require(debts[debtID].collectionAfter == 0, "addDebt: Can not override existing");
 
         debts[debtID] = Debt({
             destination: _destination,
@@ -166,29 +218,27 @@ contract Holding is Ownable, SignerRole  {
             salt: _salt
         });
 
+        _debtsSize += 1;
+
         emit DidAddDebt(_destination, _token, _amount);
     }
 
-    function forgiveDebt (bytes32 _id, bytes _signature) public {
+    /// @notice Forgive a debt. Can be called by creditor.
+    /// @param _id ID of debt in debt mapping
+    /// @param _signature Currency of creditor
+    function forgiveDebt (bytes32 _id, bytes memory _signature) public {
         Debt memory debt = debts[_id];
         address destination = debt.destination;
         address tokenContract = debt.token;
         Holding other = Holding(destination);
         bytes32 digest = ECDSA.toEthSignedMessageHash(forgiveDigest(destination, tokenContract));
         address recoveredOther = ECDSA.recover(digest, _signature);
-        require(other.isSigner(recoveredOther), "Should be signed by other");
+        require(other.isSigner(recoveredOther), "forgiveDebt: Should be signed by other");
 
-        emit DidForgive(destination, tokenContract, debts[_id].amount);
+        emit DidForgive(destination, tokenContract, debt.amount);
 
         delete debts[_id];
-    }
-    function forgive (
-        address _destination,
-        address _token,
-        bytes memory _sigMine,
-        bytes memory _sigOther
-    ) public {
-
+        _debtsSize -= 1;
     }
 
     function forgiveDigest (address _destination, address _token) public pure returns (bytes32) {
@@ -210,12 +260,13 @@ contract Holding is Ownable, SignerRole  {
     function addDebtDigest (
         address _destination,
         address _token,
-        uint256 _amount
+        uint256 _amount,
+        uint256 _settlementPeriod
     ) public pure returns (bytes32) {
-        return keccak256(abi.encode("ad", _destination, _token, _amount));
+        return keccak256(abi.encode("ad", _destination, _token, _amount, _settlementPeriod));
     }
 
-    function debtIdentifier (address _destination, address _token, uint16 _salt) public returns (bytes32) {
-        return keccak256(address(this), _destination, _token, _salt);
+    function debtIdentifier (address _destination, address _token, uint16 _salt) public view returns (bytes32) {
+        return keccak256(abi.encode(address(this), _destination, _token, _salt));
     }
 }

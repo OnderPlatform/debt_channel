@@ -183,7 +183,7 @@ contract Holding is Ownable, SignerRole  {
     /// @param _amount Value of debt
     /// @param _salt ID of debt between creditor and debtor
     /// @param _settlementPeriod Time in seconds after that creditor can claim to return debt
-    /// @param _sigOwner Signature of debtor
+    /// @param _sigDebtor Signature of debtor
     /// @param _sigCreditor Signature of creditor
     function addDebt (
         address _destination,
@@ -191,7 +191,7 @@ contract Holding is Ownable, SignerRole  {
         uint256 _amount,
         uint16 _salt,
         uint256 _settlementPeriod,
-        bytes memory _sigOwner,
+        bytes memory _sigDebtor,
         bytes memory _sigCreditor
     ) public {
         if (_retiringUntil != 0 && block.timestamp >= _retiringUntil) {
@@ -199,7 +199,7 @@ contract Holding is Ownable, SignerRole  {
             require(block.timestamp <= _retiringUntil, "addDebt: Contract is in dismissed state. Can not add new debt");
         }
         bytes32 digest = ECDSA.toEthSignedMessageHash(addDebtDigest(_destination, _token, _amount, _settlementPeriod));
-        address recoveredOwner = ECDSA.recover(digest, _sigOwner);
+        address recoveredOwner = ECDSA.recover(digest, _sigDebtor);
         require(isSigner(recoveredOwner), "addDebt: Should be signed by owner");
 
         address recoveredCreditor = ECDSA.recover(digest, _sigCreditor);

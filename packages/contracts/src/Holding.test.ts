@@ -31,6 +31,7 @@ contract('Holding', accounts => {
   const DELEGATE_ALICE = accounts[2]
   const DELEGATE_BOB = accounts[3]
   const CLEARING_HOUSE_ADDRESS = accounts[4]
+  const ALIEN = accounts[5]
 
   console.log(`ALICE is ${ALICE}`)
   console.log(`BOB is ${BOB}`)
@@ -49,8 +50,8 @@ contract('Holding', accounts => {
 
   specify('constructor', async () => {
     const holding = await Holding.new(ALICE, 3, CLEARING_HOUSE_ADDRESS, { from: ALICE })
-    const owner = await holding.owner()
-    assert.equal(owner, ALICE)
+    const isOwner = await holding.isOwner(ALICE)
+    assert(isOwner)
   })
 
   specify('.deposit', async () => {
@@ -297,6 +298,74 @@ contract('Holding', accounts => {
 
       await delay(4000)
       await assert.isRejected(instanceA.stop()) // tslint:disable-line:await-promise
+    })
+  })
+
+  describe('.ownable', () => {
+    describe('.isOwner', () => {
+      specify('yes, it is owner', async () => {
+        const isOwner = await instanceA.isOwner(ALICE)
+        assert(isOwner)
+      })
+
+      specify('not an owner', async () => {
+        const isOwner = await instanceA.isOwner(BOB)
+        assert(!isOwner)
+      })
+    })
+
+    describe('.addOwner', () => {
+      specify('usual case', async () => {
+        const isOwnerBefore = await instanceA.isOwner(ALIEN)
+        assert(!isOwnerBefore)
+        const addOwnerDigest = await instanceA.addOwnerDigest(ALIEN)
+        const signatureAddOwner = await signature(ALICE, addOwnerDigest)
+        await instanceA.addOwner(ALIEN, signatureAddOwner)
+        const isOwnerAfter = await instanceA.isOwner(ALIEN)
+        assert(isOwnerAfter)
+      })
+
+      specify('must fails when signature of new owner is wrong', async () => {
+        const isOwnerBefore = await instanceA.isOwner(ALIEN)
+        assert(!isOwnerBefore)
+        const addOwnerDigest = await instanceA.addOwnerDigest(ALIEN)
+        const signatureAddOwner = await signature(BOB, addOwnerDigest)
+        await assert.isRejected(instanceA.addOwner(ALIEN, signatureAddOwner)) // tslint:disable-line:await-promise
+        const isOwnerAfter = await instanceA.isOwner(ALIEN)
+        assert(!isOwnerAfter)
+      })
+    })
+
+    describe('.removeOwner', () => {
+      specify('usual case', async () => {
+        const isOwnerBefore = await instanceA.isOwner(ALIEN)
+        assert(!isOwnerBefore)
+        const addOwnerDigest = await instanceA.addOwnerDigest(ALIEN)
+        const signatureAddOwner = await signature(ALICE, addOwnerDigest)
+        await instanceA.addOwner(ALIEN, signatureAddOwner)
+        const isOwnerAfter = await instanceA.isOwner(ALIEN)
+        assert(isOwnerAfter)
+        const removeOwnerDigest = await instanceA.removeOwnerDigest(ALIEN)
+        const signatureRemoveOwner = await signature(ALIEN, removeOwnerDigest)
+        await instanceA.removeOwner(ALIEN, signatureRemoveOwner)
+        const isOwnerAfterRemoving = await instanceA.isOwner(ALIEN)
+        assert(!isOwnerAfterRemoving)
+      })
+
+      specify('must fails when signature of owner is wrong', async () => {
+        const isOwnerBefore = await instanceA.isOwner(ALIEN)
+        assert(!isOwnerBefore)
+        const addOwnerDigest = await instanceA.addOwnerDigest(ALIEN)
+        const signatureAddOwner = await signature(ALICE, addOwnerDigest)
+        await instanceA.addOwner(ALIEN, signatureAddOwner)
+        const isOwnerAfter = await instanceA.isOwner(ALIEN)
+        assert(isOwnerAfter)
+        const removeOwnerDigest = await instanceA.removeOwnerDigest(ALIEN)
+        const signatureRemoveOwner = await signature(BOB, removeOwnerDigest)
+        await assert.isRejected(instanceA.removeOwner(ALIEN, signatureRemoveOwner)) // tslint:disable-line:await-promise
+        const isOwnerAfterRemoving = await instanceA.isOwner(ALIEN)
+        assert(isOwnerAfterRemoving)
+      })
     })
   })
 })

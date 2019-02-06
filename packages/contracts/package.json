@@ -44,7 +44,11 @@
     "chai-as-promised": "^7.1.1",
     "truffle": "^5.0.3",
     "solium": "^1.2.2",
-    "solidity-coverage": "^0.5.11"
+    "solidity-coverage": "^0.5.11",
+    "tslint": "^5.12.1",
+    "tslint-config-standard": "^6.0.1"
   },
-  "dependencies": {}
+  "dependencies": {
+    "openzeppelin-solidity": "^2.1.2"
+  }
 }

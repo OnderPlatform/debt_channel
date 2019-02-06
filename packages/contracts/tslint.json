@@ -1,0 +1,11 @@
+{
+  "defaultSeverity": "error",
+  "extends": "tslint-config-standard",
+  "rules": {
+  },
+  "linterOptions": {
+    "exclude": [
+      "src/wrappers/*.ts"
+    ]
+  }
+}

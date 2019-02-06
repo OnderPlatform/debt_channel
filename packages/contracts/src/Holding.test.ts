@@ -1,26 +1,18 @@
 import * as Web3 from 'web3'
 import * as chai from 'chai'
-import { BigNumber } from 'bignumber.js'
 import * as asPromised from 'chai-as-promised'
 import * as contracts from './'
 import * as util from 'ethereumjs-util'
-import * as sigUtil from 'eth-sig-util'
-import * as solUtils from './SolidityUtils'
 import TestToken from './wrappers/TestToken'
-import { Debt } from './';
+import { Debt } from './'
 
 chai.use(asPromised)
-
-const DAY_IN_SECONDS = 24 * 60 * 60;
 
 const web3 = (global as any).web3 as Web3
 const assert = chai.assert
 
 const Holding = artifacts.require<contracts.Holding.Contract>('Holding.sol')
 const Token = artifacts.require<TestToken.Contract>('support/TestToken.sol')
-
-const WRONG_CHANNEL_ID = '0xdeadbeaf'
-const WRONG_SIGNATURE = '0xcafebabe'
 
 async function signature (signer: string, digestHex: string): Promise<string> {
   return new Promise<string>((resolve, reject) => {
@@ -31,7 +23,7 @@ async function signature (signer: string, digestHex: string): Promise<string> {
   })
 }
 
-const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+const delay = (ms: number) => new Promise(res => setTimeout(res, ms))
 
 contract('Holding', accounts => {
   const ALICE = accounts[0]
@@ -42,7 +34,6 @@ contract('Holding', accounts => {
 
   console.log(`ALICE is ${ALICE}`)
   console.log(`BOB is ${BOB}`)
-
 
   let instanceA: contracts.Holding.Contract
   let instanceB: contracts.Holding.Contract
@@ -219,10 +210,9 @@ contract('Holding', accounts => {
     assert.equal(holdingBalance.toString(), '100')
 
     const digest = await instanceA.forgiveDigest(instanceB.address, token.address)
-    const signatureA = await signature(ALICE, digest)
     const signatureB = await signature(BOB, digest)
     const debtIdentifierResult = await instanceA.debtIdentifier.call(instanceB.address, token.address, salt)
-    const tx = await instanceA.forgiveDebt(debtIdentifierResult, signatureB)
+    await instanceA.forgiveDebt(debtIdentifierResult, signatureB)
     const rawDebt = await instanceA.debts(debtIdentifierResult)
     const debt = Debt.fromContract(rawDebt)
     assert.equal(debt.amount.toString(), '0')
@@ -274,7 +264,7 @@ contract('Holding', accounts => {
 
       await delay(4000)
       await instanceA.stop()
-      await assert.isRejected(instanceA.currentState.call())
+      await assert.isRejected(instanceA.currentState.call()) // tslint:disable-line:await-promise
     })
 
     specify('must fails because of non-empty debts', async () => {
@@ -284,7 +274,7 @@ contract('Holding', accounts => {
       const signatureA = await signature(ALICE, digest)
       const signatureB = await signature(BOB, digest)
       const salt = 0x125
-      const tx = await instanceA.addDebt(instanceB.address, token.address, 100, salt, 0, signatureA, signatureB)
+      await instanceA.addDebt(instanceB.address, token.address, 100, salt, 0, signatureA, signatureB)
 
       const retireDigest = await instanceA.retireDigest(instanceA.address)
       const signatureARetire = await signature(ALICE, retireDigest)
@@ -293,12 +283,12 @@ contract('Holding', accounts => {
       await instanceA.retire(signatureARetire)
 
       await delay(4000)
-      await assert.isRejected(instanceA.stop())
+      await assert.isRejected(instanceA.stop()) // tslint:disable-line:await-promise
     })
 
     specify('must fails because of non-empty balances', async () => {
       await token.approve(instanceA.address, 100, { from: ALICE })
-      const tx = await instanceA.deposit(token.address, 100, { from: ALICE })
+      await instanceA.deposit(token.address, 100, { from: ALICE })
       const retireDigest = await instanceA.retireDigest(instanceA.address)
       const signatureARetire = await signature(ALICE, retireDigest)
       const currentState = await instanceA.currentState.call()
@@ -306,7 +296,7 @@ contract('Holding', accounts => {
       await instanceA.retire(signatureARetire)
 
       await delay(4000)
-      await assert.isRejected(instanceA.stop())
+      await assert.isRejected(instanceA.stop()) // tslint:disable-line:await-promise
     })
   })
 })

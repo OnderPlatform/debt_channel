@@ -6,8 +6,9 @@ import "./vendor/Ownable.sol";
 import "./vendor/SignerRole.sol";
 import "./vendor/ECDSA.sol";
 
+
 /// @title Holding
-contract Holding is Ownable, SignerRole  {
+contract Holding is Ownable, SignerRole {
     using SafeMath for uint256;
 
     enum State {
@@ -182,7 +183,8 @@ contract Holding is Ownable, SignerRole  {
         uint256 _settlementPeriod,
         bytes memory _sigDebtor,
         bytes memory _sigCreditor
-    ) public {
+    ) public
+    {
         require(currentState() != State.Dismissed, "addDebt: Contract is in dismissed state. Can not add new debt");
         bytes32 digest = ECDSA.toEthSignedMessageHash(addDebtDigest(_destination, _token, _amount, _settlementPeriod));
         address recoveredOwner = ECDSA.recover(digest, _sigDebtor);
@@ -252,7 +254,8 @@ contract Holding is Ownable, SignerRole  {
         address _token,
         uint256 _amount,
         uint256 _settlementPeriod
-    ) public pure returns (bytes32) {
+    ) public pure returns (bytes32)
+    {
         return keccak256(abi.encode("ad", _destination, _token, _amount, _settlementPeriod));
     }
 

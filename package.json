@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "lerna": "^3.6.0",
-    "wsrun": "^2.2.0"
+    "wsrun": "^2.2.0",
+    "typescript": "^3.3.1"
   }
 }

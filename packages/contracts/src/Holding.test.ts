@@ -233,10 +233,10 @@ contract('Holding', accounts => {
     specify('usual case', async () => {
       const retireDigest = await instanceA.retireDigest(instanceA.address)
       const signatureARetire = await signature(ALICE, retireDigest)
-      const currentState = await instanceA.currentState()
+      const currentState = await instanceA.currentState.call()
       assert.equal(currentState.toString(), '0')
       await instanceA.retire(signatureARetire)
-      const currentState2 = await instanceA.currentState()
+      const currentState2 = await instanceA.currentState.call()
       assert.equal(currentState2.toString(), '1')
     })
 
@@ -257,10 +257,10 @@ contract('Holding', accounts => {
   specify('currentState', async () => {
     const retireDigest = await instanceA.retireDigest(instanceA.address)
     const signatureARetire = await signature(ALICE, retireDigest)
-    const currentState = await instanceA.currentState()
+    const currentState = await instanceA.currentState.call()
     assert.equal(currentState.toString(), '0')
     await instanceA.retire(signatureARetire)
-    const currentState2 = await instanceA.currentState()
+    const currentState2 = await instanceA.currentState.call()
     assert.equal(currentState2.toString(), '1')
   })
 
@@ -268,13 +268,13 @@ contract('Holding', accounts => {
     specify('usual case', async () => {
       const retireDigest = await instanceA.retireDigest(instanceA.address)
       const signatureARetire = await signature(ALICE, retireDigest)
-      const currentState = await instanceA.currentState()
+      const currentState = await instanceA.currentState.call()
       assert.equal(currentState.toString(), '0')
       await instanceA.retire(signatureARetire)
 
       await delay(4000)
       await instanceA.stop()
-      await assert.isRejected(instanceA.currentState())
+      await assert.isRejected(instanceA.currentState.call())
     })
 
     specify('must fails because of non-empty debts', async () => {
@@ -288,7 +288,7 @@ contract('Holding', accounts => {
 
       const retireDigest = await instanceA.retireDigest(instanceA.address)
       const signatureARetire = await signature(ALICE, retireDigest)
-      const currentState = await instanceA.currentState()
+      const currentState = await instanceA.currentState.call()
       assert.equal(currentState.toString(), '0')
       await instanceA.retire(signatureARetire)
 
@@ -301,7 +301,7 @@ contract('Holding', accounts => {
       const tx = await instanceA.deposit(token.address, 100, { from: ALICE })
       const retireDigest = await instanceA.retireDigest(instanceA.address)
       const signatureARetire = await signature(ALICE, retireDigest)
-      const currentState = await instanceA.currentState()
+      const currentState = await instanceA.currentState.call()
       assert.equal(currentState.toString(), '0')
       await instanceA.retire(signatureARetire)
 

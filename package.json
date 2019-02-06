@@ -9,10 +9,10 @@
     ]
   },
   "scripts": {
-    "build": "wsrun build $PKG --fast-exit -r --serial",
-    "lint": "wsrun lint $PKG",
-    "test": "wsrun test $PKG",
-    "coverage": "wsrun coverage $PKG",
+    "build": "lerna run build --stream",
+    "test": "lerna run test --stream",
+    "lint": "lerna run lint --stream",
+    "coverage": "lerna run coverage --stream $PKG",
     "bootstrap": "lerna bootstrap"
   },
   "devDependencies": {

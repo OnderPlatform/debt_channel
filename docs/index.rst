@@ -2,15 +2,16 @@
 Welcome to ØNDER documentation!
 ================================
 
+=============
+Debt Channel
+=============
+
 .. toctree::
    :maxdepth: 3
    
    design
    overview
 
-=============
-Debt Channel
-=============
 `Informal overview`_
 
 .. _`Informal overview`: overview.html

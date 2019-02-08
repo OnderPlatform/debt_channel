@@ -53,3 +53,7 @@ Later, when we have time, it is beneficial to add support of the following items
 .. _`EIP 1532`: https://github.com/ethereum/EIPs/pull/1532
 
 
+Текущая дата |date|
+
+* :ref:`genindex`
+* :ref:`search`

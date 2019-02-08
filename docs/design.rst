@@ -138,7 +138,7 @@ Reason for 'collectionAfter' inclusion is one could extend debt over time, and u
 
 Debt goes through certain lifecycle stages:
 
-..image: debt_lifecycle.png
+.. image:: debt_lifecycle.png
 
 Here go related functions in the contract:
 
@@ -219,3 +219,7 @@ General note regarding 'bytes _signature' parameter. It works according to suffi
 .. _MSignatureValidator.sol: https://github.com/0xProject/0x-monorepo/blob/9b521aeef5ed35b3e9d9926dac1da4d8a3648e50/contracts/protocol/contracts/protocol/Exchange/mixins/MSignatureValidator.sol
 
 
+Текущая дата |date|
+
+* :ref:`genindex`
+* :ref:`search`

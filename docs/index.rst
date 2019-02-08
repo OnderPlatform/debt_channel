@@ -8,23 +8,9 @@ Debt Channel
 
 .. toctree::
    :maxdepth: 3
-   
+
    design
    overview
-
-`Informal overview`_
-
-.. _`Informal overview`: overview.html
-
-`Technical Design`_
-
-.. _`Technical Design`: design.html
-
---------------
-
-For documentation, use guzzle_sphinx_theme_ theme for Read The Docs
-
-.. _guzzle_sphinx_theme: https://github.com/guzzle/guzzle_sphinx_theme
 
 ~~~~~~~~~~~~~~~~~
 To be done later
@@ -66,9 +52,10 @@ Later, when we have time, it is beneficial to add support of the following items
 
 
 
-.. |date| date:: %d.%m.%Y
 
-Текущая дата |date|
+ Indices and tables
+ ==================
 
-* :ref:`genindex`
-* :ref:`search`
+ * :ref:`genindex`
+ * :ref:`modindex`
+ * :ref:`search`

@@ -4,7 +4,9 @@ Welcome to ØNDER documentation!
 
 .. toctree::
    :maxdepth: 3
-   :caption: Contents:
+   
+   design
+   overview
 
 =============
 Debt Channel

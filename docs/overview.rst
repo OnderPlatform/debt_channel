@@ -1,3 +1,9 @@
+
+
+.. toctree::
+   :maxdepth: 3
+   :caption: Contents:
+   
 ==================
 Informal overview
 ==================
@@ -85,6 +91,10 @@ We envision the debt contracts not being used for ever. Thus, the contract has t
 *retire* initiates an end of life period. After the period is over, no new debts could be added. One could only repay the existing debts.
 
 When all the debts are cleared, and the contract balance is empty, one could call *stop* to finally destroy the contract.
+
+
+
+.. |date| date:: %d.%m.%Y
 
 Текущая дата |date|
 

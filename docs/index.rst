@@ -1,3 +1,11 @@
+================================
+Welcome to ØNDER documentation!
+================================
+
+.. toctree::
+   :maxdepth: 3
+   :caption: Contents:
+
 =============
 Debt Channel
 =============
@@ -52,6 +60,10 @@ Later, when we have time, it is beneficial to add support of the following items
 
 .. _`EIP 1532`: https://github.com/ethereum/EIPs/pull/1532
 
+
+
+
+.. |date| date:: %d.%m.%Y
 
 Текущая дата |date|
 

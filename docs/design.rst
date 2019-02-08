@@ -1,3 +1,9 @@
+
+.. toctree::
+   :maxdepth: 3
+   :caption: Contents:
+
+   
 =================
 Technical Design
 =================
@@ -218,6 +224,10 @@ General note regarding 'bytes _signature' parameter. It works according to suffi
 .. _MixinSignatureValidator.sol: https://github.com/0xProject/0x-monorepo/blob/9b521aeef5ed35b3e9d9926dac1da4d8a3648e50/contracts/protocol/contracts/protocol/Exchange/MixinSignatureValidator.sol
 .. _MSignatureValidator.sol: https://github.com/0xProject/0x-monorepo/blob/9b521aeef5ed35b3e9d9926dac1da4d8a3648e50/contracts/protocol/contracts/protocol/Exchange/mixins/MSignatureValidator.sol
 
+
+
+
+.. |date| date:: %d.%m.%Y
 
 Текущая дата |date|
 

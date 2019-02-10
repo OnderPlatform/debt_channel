@@ -52,9 +52,9 @@ Later, when we have time, it is beneficial to add support of the following items
 
 
 
-
+====================
  Indices and tables
- ==================
+====================
 
  * :ref:`genindex`
  * :ref:`modindex`

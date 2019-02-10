@@ -7,6 +7,7 @@ The document specifies in technical terms the contract before implementation is 
 Rationale for the contract and choice of functions could be found in `Informal overview`_.
 
 .. _`Informal overview`: overview.html
+
 ----------------
 Debt Contract
 ----------------

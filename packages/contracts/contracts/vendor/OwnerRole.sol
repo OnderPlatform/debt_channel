@@ -12,6 +12,9 @@ contract OwnerRole is IOwnerRole {
 
     Roles.Role private _owners;
 
+    event DidAddOwner(address indexed candidate, address indexed owner);
+    event DidRemoveOwner(address indexed candidate, address indexed owner);
+
     constructor () internal {
         _owners.add(msg.sender);
     }
@@ -28,17 +31,19 @@ contract OwnerRole is IOwnerRole {
         return _owners.has(_address);
     }
 
-    function addOwner (address _newOwner, bytes memory _signature) public {
-        bytes32 digest = ECDSA.toEthSignedMessageHash(addOwnerDigest(_newOwner));
-        address newOwner = ECDSA.recover(digest, _signature);
-        require(isOwner(newOwner), "addOwner: Should be signed by one of owners");
-        _owners.add(_newOwner);
+    function addOwner (address _candidate, bytes memory _signature) public {
+        bytes32 digest = ECDSA.toEthSignedMessageHash(addOwnerDigest(_candidate));
+        address owner = ECDSA.recover(digest, _signature);
+        require(isOwner(owner), "addOwner: Should be signed by one of owners");
+        _owners.add(_candidate);
+        emit DidAddOwner(_candidate, owner);
     }
 
-    function removeOwner (address _owner, bytes memory _signature) public {
-        bytes32 digest = ECDSA.toEthSignedMessageHash(removeOwnerDigest(_owner));
+    function removeOwner (address _candidate, bytes memory _signature) public {
+        bytes32 digest = ECDSA.toEthSignedMessageHash(removeOwnerDigest(_candidate));
         address owner = ECDSA.recover(digest, _signature);
         require(isOwner(owner), "removeOwner: Should be signed by one of owners");
-        _owners.remove(_owner);
+        _owners.remove(_candidate);
+        emit DidRemoveOwner(_candidate, owner);
     }
 }

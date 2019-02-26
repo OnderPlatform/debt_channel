@@ -7,8 +7,8 @@ import "../IOwnerRole.sol";
 contract SignerRole {
     using Roles for Roles.Role;
 
-    event DidAddSigner(address indexed signer, address indexed owner);
-    event DidRemoveSigner(address indexed signer, address indexed owner);
+    event DidAddSigner(address indexed candidate, address indexed owner);
+    event DidRemoveSigner(address indexed candidate, address indexed owner);
 
     Roles.Role private _signers;
 

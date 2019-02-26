@@ -3,7 +3,7 @@ pragma solidity ^0.5.0;
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/cryptography/ECDSA.sol";
-import "./vendor/Ownable.sol";
+import "./vendor/OwnerRole.sol";
 import "./vendor/SignerRole.sol";
 import "./ClearingHouse.sol";
 

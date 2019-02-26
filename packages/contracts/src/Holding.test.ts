@@ -606,70 +606,66 @@ contract('Holding', accounts => {
     })
   })
 
-  describe('.ownable', () => {
+  context('ownership', () => {
     describe('.isOwner', () => {
       specify('yes, it is owner', async () => {
-        const isOwner = await instanceA.isOwner(ALICE)
-        assert(isOwner)
+        assert(await instanceA.isOwner(ALICE))
       })
 
       specify('not an owner', async () => {
-        const isOwner = await instanceA.isOwner(BOB)
-        assert(!isOwner)
+        assert.isFalse(await instanceA.isOwner(BOB))
       })
     })
 
     describe('.addOwner', () => {
       specify('happy case', async () => {
-        const isOwnerBefore = await instanceA.isOwner(ALIEN)
-        assert(!isOwnerBefore)
+        assert.isFalse(await instanceA.isOwner(ALIEN))
         const addOwnerDigest = await instanceA.addOwnerDigest(ALIEN)
         const signatureAddOwner = await signature(ALICE, addOwnerDigest)
-        await instanceA.addOwner(ALIEN, signatureAddOwner)
-        const isOwnerAfter = await instanceA.isOwner(ALIEN)
-        assert(isOwnerAfter)
+        const tx = await instanceA.addOwner(ALIEN, signatureAddOwner)
+        assert(await instanceA.isOwner(ALIEN))
+
+        assert(contracts.Holding.isDidAddOwnerEvent(tx.logs[0]))
+        assert.equal(tx.logs[0].args.candidate, ALIEN)
+        assert.equal(tx.logs[0].args.owner, ALICE)
       })
 
-      specify('must fails when signature of new owner is wrong', async () => {
-        const isOwnerBefore = await instanceA.isOwner(ALIEN)
-        assert(!isOwnerBefore)
-        const addOwnerDigest = await instanceA.addOwnerDigest(ALIEN)
-        const signatureAddOwner = await signature(BOB, addOwnerDigest)
-        await assert.isRejected(instanceA.addOwner(ALIEN, signatureAddOwner)) // tslint:disable-line:await-promise
-        const isOwnerAfter = await instanceA.isOwner(ALIEN)
-        assert(!isOwnerAfter)
+      specify('fail if wrong signature', async () => {
+        return assert.isRejected(instanceA.addOwner(ALIEN, '0xdead'))
       })
     })
 
     describe('.removeOwner', () => {
       specify('happy case', async () => {
-        const isOwnerBefore = await instanceA.isOwner(ALIEN)
-        assert(!isOwnerBefore)
+        assert.isFalse(await instanceA.isOwner(ALIEN))
         const addOwnerDigest = await instanceA.addOwnerDigest(ALIEN)
         const signatureAddOwner = await signature(ALICE, addOwnerDigest)
         await instanceA.addOwner(ALIEN, signatureAddOwner)
-        const isOwnerAfter = await instanceA.isOwner(ALIEN)
-        assert(isOwnerAfter)
+        assert(await instanceA.isOwner(ALIEN))
         const removeOwnerDigest = await instanceA.removeOwnerDigest(ALIEN)
-        const signatureRemoveOwner = await signature(ALIEN, removeOwnerDigest)
-        await instanceA.removeOwner(ALIEN, signatureRemoveOwner)
-        const isOwnerAfterRemoving = await instanceA.isOwner(ALIEN)
-        assert(!isOwnerAfterRemoving)
+        const signatureRemoveOwner = await signature(ALICE, removeOwnerDigest)
+        const tx = await instanceA.removeOwner(ALIEN, signatureRemoveOwner)
+        assert.isFalse(await instanceA.isOwner(ALIEN))
+
+        assert(contracts.Holding.isDidRemoveOwnerEvent(tx.logs[0]))
+        assert.equal(tx.logs[0].args.candidate, ALIEN)
+        assert.equal(tx.logs[0].args.owner, ALICE)
       })
 
-      specify('must fails when signature of owner is wrong', async () => {
-        const isOwnerBefore = await instanceA.isOwner(ALIEN)
-        assert(!isOwnerBefore)
+      specify('fail if wrong signature', async () => {
+        assert.isFalse(await instanceA.isOwner(ALIEN))
         const addOwnerDigest = await instanceA.addOwnerDigest(ALIEN)
         const signatureAddOwner = await signature(ALICE, addOwnerDigest)
         await instanceA.addOwner(ALIEN, signatureAddOwner)
-        const isOwnerAfter = await instanceA.isOwner(ALIEN)
-        assert(isOwnerAfter)
+        assert(await instanceA.isOwner(ALIEN))
+        return assert.isRejected(instanceA.removeOwner(ALIEN, '0xdead'))
+      })
+
+      specify('fail if wrong candidate', async () => {
+        assert.isFalse(await instanceA.isOwner(ALIEN))
         const removeOwnerDigest = await instanceA.removeOwnerDigest(ALIEN)
-        const signatureRemoveOwner = await signature(BOB, removeOwnerDigest)
-        await assert.isRejected(instanceA.removeOwner(ALIEN, signatureRemoveOwner)) // tslint:disable-line:await-promise
-        const isOwnerAfterRemoving = await instanceA.isOwner(ALIEN)
-        assert(isOwnerAfterRemoving)
+        const signatureRemoveOwner = await signature(ALICE, removeOwnerDigest)
+        return assert.isRejected(instanceA.removeOwner(ALIEN, signatureRemoveOwner))
       })
     })
   })
@@ -696,7 +692,7 @@ contract('Holding', accounts => {
         assert(await instanceA.isSigner(ALIEN))
 
         assert(contracts.Holding.isDidAddSignerEvent(tx.logs[0]))
-        assert.equal(tx.logs[0].args.signer, ALIEN)
+        assert.equal(tx.logs[0].args.candidate, ALIEN)
         assert.equal(tx.logs[0].args.owner, ALICE)
       })
 
@@ -720,7 +716,7 @@ contract('Holding', accounts => {
         const tx = await instanceA.removeSigner(ALIEN, signatureRemoveSigner)
         assert.isFalse(await instanceA.isSigner(ALIEN))
         assert(contracts.Holding.isDidRemoveSignerEvent(tx.logs[0]))
-        assert.equal(tx.logs[0].args.signer, ALIEN)
+        assert.equal(tx.logs[0].args.candidate, ALIEN)
         assert.equal(tx.logs[0].args.owner, ALICE)
       })
 

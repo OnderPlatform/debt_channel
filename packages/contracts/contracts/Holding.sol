@@ -40,13 +40,13 @@ contract Holding is SignerRole, OwnerRole {
     mapping (address => uint256) public balance;
 
     event DidDeposit(address indexed token, uint256 amount);
-    event DidAddDebt(address indexed destination, address indexed token, uint16 indexed nonce, uint256 amount);
-    event DidCollect(address indexed destination, address indexed token, uint256 amount);
-    event DidClose(address indexed destination, address indexed token, uint256 amount);
+    event DidAddDebt(address indexed destination, bytes32 indexed debtId);
+    event DidCollect(address indexed destination, bytes32 indexed debtId);
+    event DidClose(address indexed destination, bytes32 indexed debtId);
     event DidWithdraw(address indexed destination, address indexed token, uint256 amount);
-    event DidForgive(address indexed destination, address indexed token, uint256 amount);
-    event DidRemoveDebt(bytes32 _id);
-    event DidOnCollectDebt(address indexed _token, uint256 _amount, bytes32 _id);
+    event DidForgive(address indexed destination, bytes32 indexed debtId);
+    event DidRemoveDebt(bytes32 indexed debtId);
+    event DidOnCollectDebt(bytes32 indexed debtId);
     event DidRetired();
     event DidStop();
 
@@ -137,13 +137,13 @@ contract Holding is SignerRole, OwnerRole {
     /// @param _destination Destination of tokens or ETH
     /// @param _token Currency of withdraw - address for token, 0x0 for ETH
     /// @param _amount Value of withdraw
-    /// @param _signature Signature of contract owner (debtor) of withdrawDigest
+    /// @param _signature Signature of contract owner
     function withdraw (address payable _destination, address _token, uint256 _amount, bytes memory _signature) public {
         require(_amount <= balance[_token], "withdraw: Trying to withdraw amount which exceeds current balance in specified token");
 
         bytes32 digest = ECDSA.toEthSignedMessageHash(withdrawDigest(_destination, _token, _amount));
         address recovered = ECDSA.recover(digest, _signature);
-        require(isSigner(recovered), "withdraw: Should be signed");
+        require(isOwner(recovered), "withdraw: Should be signed");
 
         if (_token == address(0x0)) {
             require(_destination.send(_amount), "withdraw: Can not transfer eth");
@@ -182,7 +182,7 @@ contract Holding is SignerRole, OwnerRole {
         } else {
             amountToSend = debt.amount;
             clearingHouse.forgive(_id);
-            emit DidClose(destination, tokenContract, amountToSend);
+            emit DidClose(destination, _id);
         }
 
         debts[_id].amount = debt.amount.sub(amountToSend);
@@ -196,7 +196,7 @@ contract Holding is SignerRole, OwnerRole {
             require(other.onCollectDebt(tokenContract, amountToSend, _id));
         }
 
-        emit DidCollect(destination, tokenContract, balance[tokenContract]);
+        emit DidCollect(destination, _id);
 
         return true;
     }
@@ -243,7 +243,7 @@ contract Holding is SignerRole, OwnerRole {
 
         debtsSize = debtsSize.add(1);
 
-        emit DidAddDebt(_destination, _token, _nonce, _amount);
+        emit DidAddDebt(_destination, debtID);
     }
 
     /// @notice Forgive a debt. Can be called by creditor.
@@ -263,7 +263,7 @@ contract Holding is SignerRole, OwnerRole {
 
         require(clearingHouse.forgive(_id));
 
-        emit DidForgive(destination, tokenContract, debt.amount);
+        emit DidForgive(destination, _id);
     }
 
     /// @notice Remove a debt.
@@ -319,7 +319,7 @@ contract Holding is SignerRole, OwnerRole {
 
         bool result = deposit(_token, _amount);
 
-        emit DidOnCollectDebt(_token, _amount, _id);
+        emit DidOnCollectDebt(_id);
         return result;
     }
 }

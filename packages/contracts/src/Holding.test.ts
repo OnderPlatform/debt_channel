@@ -61,8 +61,12 @@ contract('Holding', accounts => {
 
   specify('constructor', async () => {
     const holding = await Holding.new(3, instanceClearingHouse.address, { from: ALICE })
-    const isOwner = await holding.isOwner(ALICE)
-    assert(isOwner)
+    assert(await holding.isOwner(ALICE))
+    assert.equal(await holding.clearingHouse(), instanceClearingHouse.address)
+    assert.equal((await holding.retiringUntil()).toNumber(), 0)
+    assert.equal((await holding.debtsSize()).toNumber(), 0)
+    assert.equal((await holding.balanceSize()).toNumber(), 0)
+    assert.equal((await holding.retiringPeriod()).toNumber(), 3)
   })
 
   describe('.deposit', () => {
@@ -608,11 +612,8 @@ contract('Holding', accounts => {
 
   context('ownership', () => {
     describe('.isOwner', () => {
-      specify('yes, it is owner', async () => {
+      specify('ok for owner', async () => {
         assert(await instanceA.isOwner(ALICE))
-      })
-
-      specify('not an owner', async () => {
         assert.isFalse(await instanceA.isOwner(BOB))
       })
     })
@@ -672,14 +673,9 @@ contract('Holding', accounts => {
 
   context('delegate signers', () => {
     describe('.isSigner', () => {
-      specify('yes, it is signer', async () => {
-        const isOwner = await instanceA.isSigner(ALICE)
-        assert(isOwner)
-      })
-
-      specify('not a signer', async () => {
-        const isOwner = await instanceA.isOwner(BOB)
-        assert.isFalse(isOwner)
+      specify('ok for signer', async () => {
+        assert(await instanceA.isSigner(ALICE))
+        assert.isFalse(await instanceA.isSigner(BOB))
       })
     })
 

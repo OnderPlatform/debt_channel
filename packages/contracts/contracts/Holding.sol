@@ -29,8 +29,8 @@ contract Holding is SignerRole, OwnerRole {
 
     State public _currentState;
 
-    ClearingHouse public _clearingHouse;
-    uint256 public _retiringPeriod;
+    ClearingHouse public clearingHouse;
+    uint256 public retiringPeriod;
     uint256 public retiringUntil;
     uint256 public debtsSize;
     uint256 public balanceSize;
@@ -53,14 +53,15 @@ contract Holding is SignerRole, OwnerRole {
     /*** ACTIONS AND CONSTRAINTS ***/
 
     /// @notice Constructs the new "Holding" contract.
-    /// @param retiringPeriod How many time Holding resides in Retire state since retire() method called.
-    /// @param clearingHouse Address of contract that available to clear debts.
-    constructor (uint256 retiringPeriod, ClearingHouse clearingHouse) public SignerRole(this) {
-        _retiringPeriod = retiringPeriod;
+    /// @param _retiringPeriod How many time Holding resides in Retire state since retire() method called.
+    /// @param _clearingHouse Address of contract that available to clear debts.
+    constructor (uint256 _retiringPeriod, ClearingHouse _clearingHouse) public SignerRole(this) {
+        retiringPeriod = _retiringPeriod;
         retiringUntil = 0;
-        _clearingHouse = clearingHouse;
+        clearingHouse = _clearingHouse;
         _currentState = State.Active;
         debtsSize = 0;
+        balanceSize = 0;
     }
 
     function () external payable {
@@ -92,7 +93,7 @@ contract Holding is SignerRole, OwnerRole {
         address recovered = ECDSA.recover(digest, _signature);
         require(isSigner(recovered), "retire: Should be signed");
 
-        retiringUntil = block.timestamp + _retiringPeriod;
+        retiringUntil = block.timestamp.add(retiringPeriod);
         _currentState = State.Retired;
 
         emit DidRetired();
@@ -180,7 +181,7 @@ contract Holding is SignerRole, OwnerRole {
             amountToSend = balance[tokenContract];
         } else {
             amountToSend = debt.amount;
-            _clearingHouse.forgive(_id);
+            clearingHouse.forgive(_id);
             emit DidClose(destination, tokenContract, amountToSend);
         }
 
@@ -260,7 +261,7 @@ contract Holding is SignerRole, OwnerRole {
         delete debts[_id];
         debtsSize = debtsSize.sub(1);
 
-        require(_clearingHouse.forgive(_id));
+        require(clearingHouse.forgive(_id));
 
         emit DidForgive(destination, tokenContract, debt.amount);
     }
@@ -270,7 +271,7 @@ contract Holding is SignerRole, OwnerRole {
     function removeDebt (bytes32 _id) public {
         require(debts[_id].collectionAfter != 0, "removeDebt: Debt with _id does not exists");
 
-        bool isCleared = _clearingHouse.isCleared(address(this), _id);
+        bool isCleared = clearingHouse.isCleared(address(this), _id);
         bool isFullyRepaid = debts[_id].amount == 0;
 
         require(isCleared || isFullyRepaid, "removeDebt: Removed debt must be cleared in ClearingHouse OR fully repaid");

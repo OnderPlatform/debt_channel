@@ -66,51 +66,63 @@ contract('Holding', accounts => {
   })
 
   describe('.deposit', () => {
+    const amount = 100
+
     specify('tokens: usual case', async () => {
-      await token.approve(instanceA.address, 1000, {from: ALICE})
-      await instanceA.deposit(token.address, 100, {from: ALICE})
+      await token.approve(instanceA.address, amount * 10, {from: ALICE})
+      const balanceSizeBefore = await instanceA.balanceSize()
+      const tx = await instanceA.deposit(token.address, amount, {from: ALICE})
+      assert(contracts.Holding.isDidDepositEvent(tx.logs[0]))
+      assert.equal(tx.logs[0].args.token, token.address)
+      assert.equal(tx.logs[0].args.amount.toString(), amount.toString())
+
+      const balanceSizeAfter = await instanceA.balanceSize()
       const tokenBalance = await token.balanceOf(instanceA.address)
-      assert.equal(tokenBalance.toString(), '100')
+      assert.equal(tokenBalance.toNumber(), 100)
       const holdingBalance = await instanceA.balance(token.address)
-      assert.equal(holdingBalance.toString(), '100')
+      assert.equal(holdingBalance.toNumber(), 100)
+      assert.equal(balanceSizeAfter.toNumber(), balanceSizeBefore.toNumber() + 1)
     })
 
     specify('eth: usual case', async () => {
-      const holdingBalanceBefore = await instanceA.balance(ETH_AS_TOKEN_ADDRESS)
-      assert.equal(ethers.utils.formatEther(holdingBalanceBefore.toString()).toString(), '0.0')
+      const amount = new BigNumber(ethers.utils.parseEther('0.01').toString())
 
-      await instanceA.deposit(ETH_AS_TOKEN_ADDRESS,
-        new BigNumber(ethers.utils.parseEther('0.01').toString()),
-        { from: ALICE, value: ethers.utils.parseEther('0.01').toString() })
+      const holdingBalanceBefore = await instanceA.balance(ETH_AS_TOKEN_ADDRESS)
+      assert.equal(holdingBalanceBefore.toNumber(), 0)
+      const balanceSizeBefore = await instanceA.balanceSize()
+
+      const tx = await instanceA.deposit(ETH_AS_TOKEN_ADDRESS, amount, { from: ALICE, value: amount })
+      assert(contracts.Holding.isDidDepositEvent(tx.logs[0]))
+      assert.equal(tx.logs[0].args.token, ETH_AS_TOKEN_ADDRESS)
+      assert.equal(tx.logs[0].args.amount.toString(), amount.toString())
 
       const holdingBalanceAfter = await instanceA.balance(ETH_AS_TOKEN_ADDRESS)
-      assert.equal(ethers.utils.formatEther(holdingBalanceAfter.toString()).toString(), '0.01')
+      assert.equal(holdingBalanceAfter.toString(), amount.toString())
+
+      const balanceSizeAfter = await instanceA.balanceSize()
+      assert.equal(balanceSizeAfter.toNumber(), balanceSizeBefore.toNumber() + 1)
     })
 
-    specify('tokens: must fails when user wants to deposit too much', async () => {
-      await token.approve(instanceA.address, 1000, {from: ALICE})
+    specify('tokens: fail if user wants to deposit too much', async () => {
+      await token.approve(instanceA.address, amount, {from: ALICE})
       const tokenBalanceBefore = await token.balanceOf(instanceA.address)
       const holdingBalanceBefore = await instanceA.balance(token.address)
-      assert.equal(tokenBalanceBefore.toString(), '0')
-      assert.equal(holdingBalanceBefore.toString(), '0')
-      await assert.isRejected(instanceA.deposit(token.address, 100 * 100, {from: ALICE})) // tslint:disable-line:await-promise
-      const tokenBalanceAfter = await token.balanceOf(instanceA.address)
-      const holdingBalanceAfter = await instanceA.balance(token.address)
-      assert.equal(tokenBalanceAfter.toString(), '0')
-      assert.equal(holdingBalanceAfter.toString(), '0')
+      assert.equal(tokenBalanceBefore.toNumber(), 0)
+      assert.equal(holdingBalanceBefore.toNumber(), 0)
+      return assert.isRejected(instanceA.deposit(token.address, amount * 10, {from: ALICE}))
     })
 
-    specify('eth: must fails when user wants to deposit too much', async () => {
-      const aliceBalance = (await ethProvider.getBalance(ALICE)).toString()
+    specify('eth: fail if user wants to deposit too much', async () => {
+      const aliceBalance = new BigNumber((await ethProvider.getBalance(ALICE)).toString())
       const holdingBalanceBefore = await instanceA.balance(ETH_AS_TOKEN_ADDRESS)
-      assert.equal(ethers.utils.formatEther(holdingBalanceBefore.toString()).toString(), '0.0')
+      assert.equal(holdingBalanceBefore.toNumber(), 0)
 
-      await assert.isRejected(instanceA.deposit(ETH_AS_TOKEN_ADDRESS,
-        new BigNumber(ethers.utils.parseEther('0.01').toString()),
-        { from: ALICE, value: new BigNumber(aliceBalance).add(1).toString() })) // tslint:disable-line:await-promise
+      const depositBalance = aliceBalance.mul(2)
+      return assert.isRejected(instanceA.deposit(ETH_AS_TOKEN_ADDRESS, depositBalance,{ from: ALICE, value: depositBalance }))
+    })
 
-      const holdingBalanceAfter = await instanceA.balance(ETH_AS_TOKEN_ADDRESS)
-      assert.equal(holdingBalanceAfter.toString(), holdingBalanceBefore.toString())
+    specify('eth: fail if balance does not correspond', async () => {
+      return assert.isRejected(instanceA.deposit(ETH_AS_TOKEN_ADDRESS, 10,{ from: ALICE, value: 20 }))
     })
   })
 
@@ -307,26 +319,90 @@ contract('Holding', accounts => {
   })
 
   describe('.withdraw', () => {
-    specify('tokens: usual case', async () => {
-      await token.approve(instanceA.address, 1000, {from: ALICE})
-      await instanceA.deposit(token.address, 100, {from: ALICE})
-      const tokenBalance = await token.balanceOf(instanceA.address)
-      assert.equal(tokenBalance.toString(), '100')
-      const holdingBalance = await instanceA.balance(token.address)
-      assert.equal(holdingBalance.toString(), '100')
+    const amount = 100
+    const withdrawal = 10
 
-      const withdrawal = 10
+    specify('tokens: happy case', async () => {
+      await token.approve(instanceA.address, amount * 10, {from: ALICE})
+      await instanceA.deposit(token.address, amount, {from: ALICE})
+      const tokenBalance = await token.balanceOf(instanceA.address)
+      assert.equal(tokenBalance.toNumber(), amount)
+      const holdingBalance = await instanceA.balance(token.address)
+      assert.equal(holdingBalance.toNumber(), amount)
+
       const digest = await instanceA.withdrawDigest(BOB, token.address, withdrawal)
       const signatureA = await signature(ALICE, digest)
       const balanceBefore = await token.balanceOf(BOB)
-      await instanceA.withdraw(BOB, token.address, withdrawal, signatureA)
+
+      const tx = await instanceA.withdraw(BOB, token.address, withdrawal, signatureA)
+
+      assert(contracts.Holding.isDidWithdrawEvent(tx.logs[0]))
+      assert.equal(tx.logs[0].args.destination, BOB)
+      assert.equal(tx.logs[0].args.token, token.address)
+      assert.equal(tx.logs[0].args.amount.toString(), withdrawal.toString())
+
       const balanceAfter = await token.balanceOf(BOB)
       assert.equal(balanceAfter.sub(balanceBefore).toString(), withdrawal.toString())
       const holdingBalanceAfter = await instanceA.balance(token.address)
-      assert.equal(holdingBalanceAfter.sub(holdingBalance).toString(), (-1 * withdrawal).toString())
+      assert.equal(holdingBalanceAfter.sub(holdingBalance).toNumber(), -1 * withdrawal)
     })
 
-    specify('tokens: must fails when user wants to withdraw too much', async () => {
+    specify('tokens: happy case: total withdrawal', async () => {
+      await token.approve(instanceA.address, amount * 10, {from: ALICE})
+      await instanceA.deposit(token.address, amount, {from: ALICE})
+      const tokenBalance = await token.balanceOf(instanceA.address)
+      assert.equal(tokenBalance.toNumber(), amount)
+      const holdingBalance = await instanceA.balance(token.address)
+      assert.equal(holdingBalance.toNumber(), amount)
+
+      const digest = await instanceA.withdrawDigest(BOB, token.address, amount)
+      const signatureA = await signature(ALICE, digest)
+      const balanceBefore = await token.balanceOf(BOB)
+      const balanceSizeBefore = await instanceA.balanceSize()
+
+      const tx = await instanceA.withdraw(BOB, token.address, amount, signatureA)
+
+      assert(contracts.Holding.isDidWithdrawEvent(tx.logs[0]))
+      assert.equal(tx.logs[0].args.destination, BOB)
+      assert.equal(tx.logs[0].args.token, token.address)
+      assert.equal(tx.logs[0].args.amount.toString(), amount.toString())
+
+      const balanceSizeAfter = await instanceA.balanceSize()
+
+      const balanceAfter = await token.balanceOf(BOB)
+      assert.equal(balanceAfter.sub(balanceBefore).toString(), amount.toString())
+      const holdingBalanceAfter = await instanceA.balance(token.address)
+      assert.equal(holdingBalanceAfter.sub(holdingBalance).toNumber(), -1 * amount)
+      assert.equal(balanceSizeAfter.sub(balanceSizeBefore).toNumber(), -1)
+    })
+
+    specify('eth: happy case', async () => {
+      await instanceA.deposit(ETH_AS_TOKEN_ADDRESS, amount, { from: ALICE, value: amount })
+
+      const holdingBalanceBefore = await instanceA.balance(ETH_AS_TOKEN_ADDRESS)
+      assert.equal(holdingBalanceBefore.toNumber(), amount)
+
+      const digest = await instanceA.withdrawDigest(BOB, ETH_AS_TOKEN_ADDRESS, withdrawal)
+      const signatureA = await signature(ALICE, digest)
+      const balanceBefore = await ethProvider.getBalance(BOB)
+      const tx = await instanceA.withdraw(BOB, ETH_AS_TOKEN_ADDRESS, withdrawal, signatureA)
+
+      assert(contracts.Holding.isDidWithdrawEvent(tx.logs[0]))
+      assert.equal(tx.logs[0].args.destination, BOB)
+      assert.equal(tx.logs[0].args.token, ETH_AS_TOKEN_ADDRESS)
+      assert.equal(tx.logs[0].args.amount.toString(), withdrawal.toString())
+
+      const balanceAfter = await ethProvider.getBalance(BOB)
+      assert.equal(balanceAfter.sub(balanceBefore).toNumber(),
+        withdrawal,
+        'Subtract of balances must be equal to withdrawal')
+      const holdingBalanceAfter = await instanceA.balance(ETH_AS_TOKEN_ADDRESS)
+      assert.equal(holdingBalanceBefore.sub(holdingBalanceAfter).toNumber(),
+        withdrawal,
+        'Subtract of holding balances must be equal to -withdrawal')
+    })
+
+    specify('tokens: fail if user wants to withdraw too much', async () => {
       await token.approve(instanceA.address, 1000, {from: ALICE})
       await instanceA.deposit(token.address, 100, {from: ALICE})
       const tokenBalance = await token.balanceOf(instanceA.address)
@@ -337,15 +413,10 @@ contract('Holding', accounts => {
       const withdrawal = 100000000
       const digest = await instanceA.withdrawDigest(BOB, token.address, withdrawal)
       const signatureA = await signature(ALICE, digest)
-      const balanceBefore = await token.balanceOf(BOB)
-      await assert.isRejected(instanceA.withdraw(BOB, token.address, withdrawal, signatureA)) // tslint:disable-line:await-promise
-      const balanceAfter = await token.balanceOf(BOB)
-      assert.equal(balanceAfter.toString(), balanceBefore.toString())
-      const holdingBalanceAfter = await instanceA.balance(token.address)
-      assert.equal(holdingBalanceAfter.toString(), holdingBalance.toString())
+      return assert.isRejected(instanceA.withdraw(BOB, token.address, withdrawal, signatureA))
     })
 
-    specify('tokens: must fails when signature is wrong', async () => {
+    specify('tokens: fail if signature is wrong', async () => {
       await token.approve(instanceA.address, 1000, {from: ALICE})
       await instanceA.deposit(token.address, 100, {from: ALICE})
       const tokenBalance = await token.balanceOf(instanceA.address)
@@ -353,85 +424,24 @@ contract('Holding', accounts => {
       const holdingBalance = await instanceA.balance(token.address)
       assert.equal(holdingBalance.toString(), '100')
 
-      const withdrawal = 10
-      const digest = await instanceA.withdrawDigest(BOB, token.address, withdrawal)
-      const signatureA = await signature(DELEGATE_ALICE, digest)
-      const balanceBefore = await token.balanceOf(BOB)
-      await assert.isRejected(instanceA.withdraw(BOB, token.address, withdrawal, signatureA)) // tslint:disable-line:await-promise
-      const balanceAfter = await token.balanceOf(BOB)
-      assert.equal(balanceAfter.toString(), balanceBefore.toString())
-      const holdingBalanceAfter = await instanceA.balance(token.address)
-      assert.equal(holdingBalanceAfter.toString(), holdingBalance.toString())
+      return assert.isRejected(instanceA.withdraw(BOB, token.address, withdrawal, '0xdead'))
     })
 
-    specify('eth: usual case', async () => {
-      await instanceA.deposit(ETH_AS_TOKEN_ADDRESS,
-        new BigNumber(ethers.utils.parseEther('0.01').toString()),
-        { from: ALICE, value: ethers.utils.parseEther('0.01').toString() })
+    specify('eth: fail if user wants to withdraw too much', async () => {
+      await instanceA.deposit(ETH_AS_TOKEN_ADDRESS, amount, { from: ALICE, value: amount })
 
       const holdingBalanceBefore = await instanceA.balance(ETH_AS_TOKEN_ADDRESS)
-      assert.equal(ethers.utils.formatEther(holdingBalanceBefore.toString()).toString(), '0.01')
+      assert.equal(holdingBalanceBefore.toNumber(), amount)
 
-      const withdrawal = new BigNumber(ethers.utils.parseEther('0.01').toString())
+      const withdrawal = amount * 10
       const digest = await instanceA.withdrawDigest(BOB, ETH_AS_TOKEN_ADDRESS, withdrawal)
       const signatureA = await signature(ALICE, digest)
-      const balanceBefore = await ethProvider.getBalance(BOB)
-      await instanceA.withdraw(BOB, ETH_AS_TOKEN_ADDRESS, withdrawal, signatureA)
-      const balanceAfter = await ethProvider.getBalance(BOB)
-      assert.equal(balanceAfter.sub(balanceBefore).toString(),
-        withdrawal.toString(),
-        'Subtract of balances must be equal to withdrawal')
-      const holdingBalanceAfter = await instanceA.balance(ETH_AS_TOKEN_ADDRESS)
-      assert.equal(holdingBalanceAfter.sub(holdingBalanceBefore).toString(),
-        (new BigNumber(withdrawal).mul(-1)).toString(),
-        'Subtract of holding balances must be equal to -withdrawal')
+      return assert.isRejected(instanceA.withdraw(BOB, ETH_AS_TOKEN_ADDRESS, withdrawal, signatureA))
     })
 
-    specify('eth: must fails when user wants to withdraw too much', async () => {
-      const depositValue = '0.01'
-      await instanceA.deposit(ETH_AS_TOKEN_ADDRESS,
-        new BigNumber(ethers.utils.parseEther(depositValue).toString()),
-        { from: ALICE, value: ethers.utils.parseEther(depositValue).toString() })
-
-      const holdingBalanceBefore = await instanceA.balance(ETH_AS_TOKEN_ADDRESS)
-      assert.equal(ethers.utils.formatEther(holdingBalanceBefore.toString()).toString(), depositValue)
-
-      const withdrawal = new BigNumber(ethers.utils.parseEther(new BigNumber(depositValue).plus(1).toString()).toString())
-      const digest = await instanceA.withdrawDigest(BOB, ETH_AS_TOKEN_ADDRESS, withdrawal)
-      const signatureA = await signature(ALICE, digest)
-      const balanceBefore = await ethProvider.getBalance(BOB)
-      await assert.isRejected(instanceA.withdraw(BOB, ETH_AS_TOKEN_ADDRESS, withdrawal, signatureA)) // tslint:disable-line:await-promise
-      const balanceAfter = await ethProvider.getBalance(BOB)
-      assert.equal(balanceAfter.toString(),
-        balanceBefore.toString(),
-        'Balances before and after must be equal')
-      const holdingBalanceAfter = await instanceA.balance(ETH_AS_TOKEN_ADDRESS)
-      assert.equal(holdingBalanceAfter.toString(),
-        holdingBalanceBefore.toString(),
-        'Holding balances before and after must be equal')
-    })
-
-    specify('eth: must fails when signature is wrong', async () => {
-      await instanceA.deposit(ETH_AS_TOKEN_ADDRESS,
-        new BigNumber(ethers.utils.parseEther('0.01').toString()),
-        { from: ALICE, value: ethers.utils.parseEther('0.01').toString() })
-
-      const holdingBalanceBefore = await instanceA.balance(ETH_AS_TOKEN_ADDRESS)
-      assert.equal(ethers.utils.formatEther(holdingBalanceBefore.toString()).toString(), '0.01')
-
-      const withdrawal = new BigNumber(ethers.utils.parseEther('0.01').toString())
-      const digest = await instanceA.withdrawDigest(BOB, ETH_AS_TOKEN_ADDRESS, withdrawal)
-      const signatureA = await signature(DELEGATE_ALICE, digest)
-      const balanceBefore = await ethProvider.getBalance(BOB)
-      await assert.isRejected(instanceA.withdraw(BOB, ETH_AS_TOKEN_ADDRESS, withdrawal, signatureA)) // tslint:disable-line:await-promise
-      const balanceAfter = await ethProvider.getBalance(BOB)
-      assert.equal(balanceAfter.toString(),
-        balanceBefore.toString(),
-        'Balances before and after must be equal')
-      const holdingBalanceAfter = await instanceA.balance(ETH_AS_TOKEN_ADDRESS)
-      assert.equal(holdingBalanceAfter.toString(),
-        holdingBalanceBefore.toString(),
-        'Holding balances before and after must be equal')
+    specify('eth: fail if signature is wrong', async () => {
+      await instanceA.deposit(ETH_AS_TOKEN_ADDRESS, amount,{ from: ALICE, value: amount })
+      return assert.isRejected(instanceA.withdraw(BOB, ETH_AS_TOKEN_ADDRESS, withdrawal, '0xdead'))
     })
   })
 

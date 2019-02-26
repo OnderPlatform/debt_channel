@@ -28,11 +28,12 @@ contract Holding is SignerRole, OwnerRole {
     }
 
     State public _currentState;
+
     ClearingHouse public _clearingHouse;
     uint256 public _retiringPeriod;
     uint256 public retiringUntil;
     uint256 public debtsSize;
-    uint256 public _balanceSize;
+    uint256 public balanceSize;
 
     mapping (bytes32 => Debt) public debts;
     // mapping (address of token contract) => (balance in tokens)
@@ -64,7 +65,7 @@ contract Holding is SignerRole, OwnerRole {
 
     function () external payable {
         if (balance[address(0x0)] == 0) {
-            _balanceSize = _balanceSize.add(1);
+            balanceSize = balanceSize.add(1);
         }
 
         balance[address(0x0)] = balance[address(0x0)].add(msg.value);
@@ -102,7 +103,7 @@ contract Holding is SignerRole, OwnerRole {
     function stop() public {
         require(currentState() == State.Dismissed, "stop: Must be in Dismissed state");
         require(debtsSize == 0, "stop: There are some debts exists in contract");
-        require(_balanceSize == 0, "stop: Need to have null balances for using stop method");
+        require(balanceSize == 0, "stop: Need to have null balances for using stop method");
 
         emit DidStop();
 
@@ -121,7 +122,7 @@ contract Holding is SignerRole, OwnerRole {
         }
 
         if (balance[_token] == 0) {
-            _balanceSize = _balanceSize.add(1);
+            balanceSize = balanceSize.add(1);
         }
 
         balance[_token] = balance[_token].add(_amount);
@@ -153,7 +154,7 @@ contract Holding is SignerRole, OwnerRole {
         balance[_token] = balance[_token].sub(_amount);
 
         if (balance[_token] == 0) {
-            _balanceSize = _balanceSize.sub(1);
+            balanceSize = balanceSize.sub(1);
         }
 
         emit DidWithdraw(_destination, _token, _amount);
@@ -283,7 +284,7 @@ contract Holding is SignerRole, OwnerRole {
         return keccak256(abi.encode("fo", _destination, _token));
     }
 
-    function collectDigest (bytes32 _id) public pure returns (bytes32) {
+    function collectDigest (bytes32 _id) public view returns (bytes32) {
         return keccak256(abi.encode("co", address(this), _id));
     }
 
@@ -299,7 +300,7 @@ contract Holding is SignerRole, OwnerRole {
         address _destination,
         address _token,
         uint256 _amount,
-        uint256 _settlementPeriodk
+        uint256 _settlementPeriod
     ) public pure returns (bytes32)
     {
         return keccak256(abi.encode("ad", _destination, _token, _amount, _settlementPeriod));

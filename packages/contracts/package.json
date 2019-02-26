@@ -42,13 +42,15 @@
     "@types/node": "^10.12.12",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
-    "truffle": "^5.0.3",
-    "solium": "^1.2.2",
+    "ethereumjs-abi": "git+https://github.com/ethereumjs/ethereumjs-abi.git#2863c40e0982acfc0b7163f0285d4c56427c7799",
     "solidity-coverage": "^0.5.11",
+    "solium": "^1.2.2",
+    "truffle": "^5.0.3",
     "tslint": "^5.12.1",
     "tslint-config-standard": "^6.0.1"
   },
   "dependencies": {
+    "@machinomy/types-ethereumjs-abi": "^1.0.0",
     "ethers": "^4.0.23",
     "openzeppelin-solidity": "^2.1.2",
     "web3": "^0.20.7"

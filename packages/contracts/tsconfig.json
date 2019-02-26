@@ -9,6 +9,7 @@
       "@machinomy/types-truffle-contract",
       "@machinomy/types-ethereumjs-units",
       "@machinomy/types-ethereumjs-util",
+      "@machinomy/types-ethereumjs-abi",
       "@machinomy/types-eth-sig-util",
       "@machinomy/types-web3",
       "@types/mocha",

@@ -587,6 +587,14 @@
   dependencies:
     "@machinomy/types-safe-buffer" "^0.0.1"
 
+"@machinomy/types-ethereumjs-abi@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@machinomy/types-ethereumjs-abi/-/types-ethereumjs-abi-1.0.0.tgz#ad452ffd953d304f3ab922f039ede5a88a35c2d4"
+  integrity sha512-InLbyaL10w8cGjiSJ//osMcBof3yZ8pa0FCaBiAm32JDetfjFVzlWSmzhzwcyY01tXb8zMsgtrChmKjyJytQ3A==
+  dependencies:
+    ethereumjs-abi "https://github.com/ethereumjs/ethereumjs-abi"
+    safe-buffer "^5.1.2"
+
 "@machinomy/types-ethereumjs-units@^0.0.2":
   version "0.0.2"
   resolved "https://registry.yarnpkg.com/@machinomy/types-ethereumjs-units/-/types-ethereumjs-units-0.0.2.tgz#6e508fa16a89893b1d8bf9977e6b4db34da0b6a3"
@@ -2863,9 +2871,16 @@ ethereum-common@^0.0.18:
   resolved "https://registry.yarnpkg.com/ethereum-common/-/ethereum-common-0.0.18.tgz#2fdc3576f232903358976eb39da783213ff9523f"
   integrity sha1-L9w1dvIykDNYl26znaeDIT/5Uj8=
 
-"ethereumjs-abi@git+https://github.com/ethereumjs/ethereumjs-abi.git":
+"ethereumjs-abi@git+https://github.com/ethereumjs/ethereumjs-abi.git", "ethereumjs-abi@git+https://github.com/ethereumjs/ethereumjs-abi.git#2863c40e0982acfc0b7163f0285d4c56427c7799":
   version "0.6.5"
   resolved "git+https://github.com/ethereumjs/ethereumjs-abi.git#2863c40e0982acfc0b7163f0285d4c56427c7799"
+  dependencies:
+    bn.js "^4.10.0"
+    ethereumjs-util "^5.0.0"
+
+"ethereumjs-abi@https://github.com/ethereumjs/ethereumjs-abi":
+  version "0.6.6"
+  resolved "https://github.com/ethereumjs/ethereumjs-abi#d84a96796079c8595a0c78accd1e7709f2277215"
   dependencies:
     bn.js "^4.10.0"
     ethereumjs-util "^5.0.0"

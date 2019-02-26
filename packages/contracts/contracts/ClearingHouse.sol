@@ -11,6 +11,8 @@ contract ClearingHouse {
 
     mapping (address => mapping (bytes32 => bool)) public cleared;
 
+    event DidForgive (address indexed identity, bytes32 indexed debtId);
+
     function clear (
         address payable _partyA,
         address payable _partyB,
@@ -37,8 +39,10 @@ contract ClearingHouse {
         return cleared[_party][_id];
     }
 
-    function forgive (bytes32 _id) public {
-        cleared[msg.sender][_id] = true;
+    function forgive (bytes32 _debtId) public returns (bool) {
+        cleared[msg.sender][_debtId] = true;
+        emit DidForgive(msg.sender, _debtId);
+        return true;
     }
 
     function clearDigest (address _partyA, address _partyB, bytes32 _idA, bytes32 _idB) public pure returns (bytes32) {

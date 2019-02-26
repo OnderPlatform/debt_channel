@@ -7,8 +7,8 @@ import "../IOwnerRole.sol";
 contract SignerRole {
     using Roles for Roles.Role;
 
-    event SignerAdded(address indexed account);
-    event SignerRemoved(address indexed account);
+    event DidAddSigner(address indexed signer, address indexed owner);
+    event DidRemoveSigner(address indexed signer, address indexed owner);
 
     Roles.Role private _signers;
 
@@ -41,7 +41,7 @@ contract SignerRole {
         address owner = ECDSA.recover(digest, _signature);
         require(parent.isOwner(owner), "addSigner: Should be signed by one of owners");
         _signers.add(_newSigner);
-        emit SignerAdded(_newSigner);
+        emit DidAddSigner(_newSigner, owner);
     }
 
     function removeSigner (address _signer, bytes memory _signature) public {
@@ -49,6 +49,6 @@ contract SignerRole {
         address owner = ECDSA.recover(digest, _signature);
         require(parent.isOwner(owner), "removeSigner: Should be signed by one of owners");
         _signers.remove(_signer);
-        emit SignerRemoved(_signer);
+        emit DidRemoveSigner(_signer, owner);
     }
 }

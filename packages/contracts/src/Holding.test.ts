@@ -68,7 +68,7 @@ contract('Holding', accounts => {
   describe('.deposit', () => {
     const amount = 100
 
-    specify('tokens: usual case', async () => {
+    specify('tokens: happy case', async () => {
       await token.approve(instanceA.address, amount * 10, {from: ALICE})
       const balanceSizeBefore = await instanceA.balanceSize()
       const tx = await instanceA.deposit(token.address, amount, {from: ALICE})
@@ -84,7 +84,7 @@ contract('Holding', accounts => {
       assert.equal(balanceSizeAfter.toNumber(), balanceSizeBefore.toNumber() + 1)
     })
 
-    specify('eth: usual case', async () => {
+    specify('eth: happy case', async () => {
       const amount = new BigNumber(ethers.utils.parseEther('0.01').toString())
 
       const holdingBalanceBefore = await instanceA.balance(ETH_AS_TOKEN_ADDRESS)
@@ -251,7 +251,7 @@ contract('Holding', accounts => {
     const SETTLEMENT_PERIOD = 0
     const NONCE = 0x125
 
-    specify('tokens: usual case', async () => {
+    specify('tokens: happy case', async () => {
       await token.approve(instanceA.address, 1000, {from: ALICE})
       await instanceA.deposit(token.address, AMOUNT, {from: ALICE})
       const digest = await instanceA.addDebtDigest(instanceB.address, token.address, AMOUNT, SETTLEMENT_PERIOD)
@@ -277,7 +277,7 @@ contract('Holding', accounts => {
       assert.equal(holdingAfter.sub(holdingBefore).toString(), AMOUNT.toString())
     })
 
-    specify('eth: usual case', async () => {
+    specify('eth: happy case', async () => {
       const value = new BigNumber(ethers.utils.parseEther('0.01').toString())
       await instanceA.deposit(ETH_AS_TOKEN_ADDRESS, value, { from: ALICE, value: value })
       const holdingBalanceBefore = await instanceA.balance(ETH_AS_TOKEN_ADDRESS)
@@ -526,7 +526,7 @@ contract('Holding', accounts => {
   })
 
   describe('.retire', () => {
-    specify('usual case', async () => {
+    specify('happy case', async () => {
       const retireDigest = await instanceA.retireDigest(instanceA.address)
       const signatureARetire = await signature(ALICE, retireDigest)
       const currentState = await instanceA.currentState.call()
@@ -561,7 +561,7 @@ contract('Holding', accounts => {
   })
 
   describe('.stop', () => {
-    specify('usual case', async () => {
+    specify('happy case', async () => {
       const retireDigest = await instanceA.retireDigest(instanceA.address)
       const signatureARetire = await signature(ALICE, retireDigest)
       const currentState = await instanceA.currentState.call()
@@ -620,7 +620,7 @@ contract('Holding', accounts => {
     })
 
     describe('.addOwner', () => {
-      specify('usual case', async () => {
+      specify('happy case', async () => {
         const isOwnerBefore = await instanceA.isOwner(ALIEN)
         assert(!isOwnerBefore)
         const addOwnerDigest = await instanceA.addOwnerDigest(ALIEN)
@@ -642,7 +642,7 @@ contract('Holding', accounts => {
     })
 
     describe('.removeOwner', () => {
-      specify('usual case', async () => {
+      specify('happy case', async () => {
         const isOwnerBefore = await instanceA.isOwner(ALIEN)
         assert(!isOwnerBefore)
         const addOwnerDigest = await instanceA.addOwnerDigest(ALIEN)
@@ -674,70 +674,64 @@ contract('Holding', accounts => {
     })
   })
 
-  describe('.signers', () => {
+  context('delegate signers', () => {
     describe('.isSigner', () => {
       specify('yes, it is signer', async () => {
         const isOwner = await instanceA.isSigner(ALICE)
         assert(isOwner)
       })
 
-      specify('not an signer', async () => {
+      specify('not a signer', async () => {
         const isOwner = await instanceA.isOwner(BOB)
-        assert(!isOwner)
+        assert.isFalse(isOwner)
       })
     })
 
     describe('.addSigner', () => {
-      specify('usual case', async () => {
-        const isSignerBefore = await instanceA.isSigner(ALIEN)
-        assert(!isSignerBefore)
+      specify('happy case', async () => {
+        assert.isFalse(await instanceA.isSigner(ALIEN))
         const addSignerDigest = await instanceA.addSignerDigest(ALIEN)
         const signatureAddSigner = await signature(ALICE, addSignerDigest)
-        await instanceA.addSigner(ALIEN, signatureAddSigner)
-        const isSignerAfter = await instanceA.isSigner(ALIEN)
-        assert(isSignerAfter)
+        const tx = await instanceA.addSigner(ALIEN, signatureAddSigner)
+        assert(await instanceA.isSigner(ALIEN))
+
+        assert(contracts.Holding.isDidAddSignerEvent(tx.logs[0]))
+        assert.equal(tx.logs[0].args.signer, ALIEN)
+        assert.equal(tx.logs[0].args.owner, ALICE)
       })
 
-      specify('must fails when signature of new signer is wrong', async () => {
-        const isSignerBefore = await instanceA.isSigner(ALIEN)
-        assert(!isSignerBefore)
+      specify('not if signature of new signer is wrong', async () => {
+        assert.isFalse(await instanceA.isSigner(ALIEN))
         const addSignerDigest = await instanceA.addSignerDigest(ALIEN)
         const signatureAddSigner = await signature(BOB, addSignerDigest)
-        await assert.isRejected(instanceA.addSigner(ALIEN, signatureAddSigner)) // tslint:disable-line:await-promise
-        const isSignerAfter = await instanceA.isSigner(ALIEN)
-        assert(!isSignerAfter)
+        return assert.isRejected(instanceA.addSigner(ALIEN, signatureAddSigner))
       })
     })
 
     describe('.removeSigner', () => {
-      specify('usual case', async () => {
-        const isSignerBefore = await instanceA.isSigner(ALIEN)
-        assert(!isSignerBefore)
+      specify('happy case', async () => {
+        assert.isFalse(await instanceA.isSigner(ALIEN))
         const addSignerDigest = await instanceA.addSignerDigest(ALIEN)
         const signatureAddSigner = await signature(ALICE, addSignerDigest)
         await instanceA.addSigner(ALIEN, signatureAddSigner)
-        const isSignerAfter = await instanceA.isSigner(ALIEN)
-        assert(isSignerAfter)
+        assert(await instanceA.isSigner(ALIEN))
         const removeSignerDigest = await instanceA.removeSignerDigest(ALIEN)
         const signatureRemoveSigner = await signature(ALICE, removeSignerDigest)
-        await instanceA.removeSigner(ALIEN, signatureRemoveSigner)
-        const isSignerAfterRemoving = await instanceA.isSigner(ALIEN)
-        assert(!isSignerAfterRemoving)
+        const tx = await instanceA.removeSigner(ALIEN, signatureRemoveSigner)
+        assert.isFalse(await instanceA.isSigner(ALIEN))
+        assert(contracts.Holding.isDidRemoveSignerEvent(tx.logs[0]))
+        assert.equal(tx.logs[0].args.signer, ALIEN)
+        assert.equal(tx.logs[0].args.owner, ALICE)
       })
 
-      specify('must fails when signature of signer is wrong', async () => {
-        const isSingerBefore = await instanceA.isSigner(ALIEN)
-        assert(!isSingerBefore)
+      specify('not if signature of signer is wrong', async () => {
+        assert.isFalse(await instanceA.isSigner(ALIEN))
         const addSignerDigest = await instanceA.addSignerDigest(ALIEN)
         const signatureAddSigner = await signature(ALICE, addSignerDigest)
         await instanceA.addSigner(ALIEN, signatureAddSigner)
         const isSignerAfter = await instanceA.isSigner(ALIEN)
         assert(isSignerAfter)
-        const removeSignerDigest = await instanceA.removeSignerDigest(ALIEN)
-        const signatureRemoveSigner = await signature(BOB, removeSignerDigest)
-        await assert.isRejected(instanceA.removeSigner(ALIEN, signatureRemoveSigner)) // tslint:disable-line:await-promise
-        const isSignerAfterRemoving = await instanceA.isSigner(ALIEN)
-        assert(isSignerAfterRemoving)
+        return assert.isRejected(instanceA.removeSigner(ALIEN, '0xdead'))
       })
     })
   })
@@ -785,7 +779,7 @@ contract('Holding', accounts => {
     })
   })
 
-  describe('debtIdentifier', () => {
+  describe('.debtIdentifier', () => {
     specify('contains address, destination, token, salt', async () => {
       const destination = instanceB.address
       const tokenAddress = token.address
@@ -800,7 +794,7 @@ contract('Holding', accounts => {
     })
   })
 
-  describe('onCollectDebt', () => {
+  describe('.onCollectDebt', () => {
     const amount = 100
 
     specify('effectively do deposit in tokens', async () => {

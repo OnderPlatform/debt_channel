@@ -43,11 +43,11 @@
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "ethereumjs-abi": "git+https://github.com/ethereumjs/ethereumjs-abi.git#2863c40e0982acfc0b7163f0285d4c56427c7799",
-    "solidity-coverage": "^0.5.11",
-    "solium": "^1.2.2",
-    "truffle": "^5.0.3",
-    "tslint": "^5.12.1",
-    "tslint-config-standard": "^6.0.1"
+    "solidity-coverage": "https://github.com/leapdao/solidity-coverage",
+    "solium": "^1.2.3",
+    "truffle": "^5.0.5",
+    "tslint": "^5.13.0",
+    "tslint-config-standard": "^8.0.x"
   },
   "dependencies": {
     "@machinomy/types-ethereumjs-abi": "^1.0.0",

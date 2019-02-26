@@ -4,8 +4,6 @@ import * as asPromised from 'chai-as-promised'
 import * as contracts from './'
 import * as util from 'ethereumjs-util'
 import TestToken from './wrappers/TestToken'
-import { Buffer } from 'safe-buffer'
-import { Debt } from './'
 
 chai.use(asPromised)
 
@@ -122,7 +120,7 @@ contract('ClearingHouse', accounts => {
       assert.equal(tx.logs[0].args.debtId, debtId)
 
       const rawDebt = await instanceA.debts(debtId)
-      const debt = Debt.fromContract(rawDebt)
+      const debt = contracts.Debt.fromContract(rawDebt)
       assert.equal(debt.amount.toNumber(), 0)
       assert.equal(debt.collectionAfter.toNumber(), 0)
 

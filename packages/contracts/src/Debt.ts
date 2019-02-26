@@ -8,8 +8,8 @@ export interface Debt {
   nonce: string
 }
 
-export namespace Debt {
-  export function fromContract (r: [string, string, BigNumber, BigNumber, BigNumber]) {
+export class Debt {
+  static fromContract (r: [string, string, BigNumber, BigNumber, BigNumber]) {
     const destination = r[0]
     const token = r[1]
     const collectionAfter = r[2]

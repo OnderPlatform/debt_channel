@@ -2,7 +2,8 @@ pragma solidity ^0.5.0;
 
 import "openzeppelin-solidity/contracts/access/Roles.sol";
 import "openzeppelin-solidity/contracts/cryptography/ECDSA.sol";
-import "../IOwnerRole.sol";
+import "./IOwnerRole.sol";
+
 
 contract SignerRole {
     using Roles for Roles.Role;
@@ -20,7 +21,7 @@ contract SignerRole {
     }
 
     modifier onlySigner() {
-        require(isSigner(msg.sender));
+        require(isSigner(msg.sender), "00_WRONG_SIGNATURE");
         _;
     }
 

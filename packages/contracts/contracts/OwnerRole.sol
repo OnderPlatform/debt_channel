@@ -2,7 +2,8 @@ pragma solidity ^0.5.0;
 
 import "openzeppelin-solidity/contracts/access/Roles.sol";
 import "openzeppelin-solidity/contracts/cryptography/ECDSA.sol";
-import "../IOwnerRole.sol";
+import "./IOwnerRole.sol";
+
 
 /**
  * @title Ownable

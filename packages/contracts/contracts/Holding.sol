@@ -3,8 +3,8 @@ pragma solidity ^0.5.0;
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/cryptography/ECDSA.sol";
-import "./vendor/OwnerRole.sol";
-import "./vendor/SignerRole.sol";
+import "./OwnerRole.sol";
+import "./SignerRole.sol";
 import "./ClearingHouse.sol";
 
 
@@ -72,6 +72,17 @@ contract Holding is SignerRole, OwnerRole {
         balance[address(0x0)] = balance[address(0x0)].add(msg.value);
 
         emit DidDeposit(address(0x0), msg.value);
+    }
+
+    function onCollectDebt (address _token, uint256 _amount, bytes32 _id) external payable returns (bool) {
+        if (_token == address(0x0)) {
+            require(msg.value == _amount, "onCollectDebt: msg.value and amount must be equal for ETH");
+        }
+
+        bool result = deposit(_token, _amount);
+
+        emit DidOnCollectDebt(_id);
+        return result;
     }
 
     /// @notice Get current contract lifecycle stage.
@@ -166,15 +177,15 @@ contract Holding is SignerRole, OwnerRole {
     /// @param _signature Signature of debtor of collectDigest
     function collectDebt (bytes32 _id, bytes memory _signature) public returns (bool) {
         Debt memory debt = debts[_id];
-        require(debt.collectionAfter != 0, "collectDebt: Debt with specified ID does not found");
-        require(debt.collectionAfter <= block.timestamp, "collectDebt: Can only collect existing stuff");
+        require(debt.collectionAfter != 0, "00_NO_DEBT_FOUND");
+        require(debt.collectionAfter <= block.timestamp, "01_CAN_NOT_COLLECT_BEFORE_TIME");
 
         address payable destination = debt.destination;
         Holding other = Holding(destination);
         address tokenContract = debt.token;
         bytes32 digest = ECDSA.toEthSignedMessageHash(collectDigest(_id));
         address recoveredOther = ECDSA.recover(digest, _signature);
-        require(other.isSigner(recoveredOther), "collectDebt: Should be signed by other or wrong source digest");
+        require(other.isSigner(recoveredOther), "02_NOT_SIGNER");
 
         uint256 amountToSend;
         if (debt.amount > balance[tokenContract]) {
@@ -189,11 +200,11 @@ contract Holding is SignerRole, OwnerRole {
         balance[tokenContract] = balance[tokenContract].sub(amountToSend);
 
         if (tokenContract == address(0x0)) {
-            require(other.onCollectDebt.value(amountToSend)(tokenContract, amountToSend, _id));
+            require(other.onCollectDebt.value(amountToSend)(tokenContract, amountToSend, _id), "03_CAN_NOT_COLLECT_DEBT");
         } else {
             IERC20 token = IERC20(tokenContract);
-            require(token.approve(destination, amountToSend), "collectDebt: Can not approve token transfer");
-            require(other.onCollectDebt(tokenContract, amountToSend, _id));
+            require(token.approve(destination, amountToSend), "04_CAN_NOT_APPROVE_TOKEN");
+            require(other.onCollectDebt(tokenContract, amountToSend, _id), "05_CAN_NOT_COLLECT_DEBT");
         }
 
         emit DidCollect(destination, _id);
@@ -256,12 +267,12 @@ contract Holding is SignerRole, OwnerRole {
         Holding other = Holding(destination);
         bytes32 digest = ECDSA.toEthSignedMessageHash(forgiveDigest(destination, tokenContract));
         address recoveredOther = ECDSA.recover(digest, _signature);
-        require(other.isSigner(recoveredOther), "forgiveDebt: Should be signed by other");
+        require(other.isSigner(recoveredOther), "00_WRONG_SIGNATURE");
 
         delete debts[_id];
         debtsSize = debtsSize.sub(1);
 
-        require(clearingHouse.forgive(_id));
+        require(clearingHouse.forgive(_id), "01_CAN_NOT_FORGIVE");
 
         emit DidForgive(destination, _id);
     }
@@ -309,17 +320,5 @@ contract Holding is SignerRole, OwnerRole {
 
     function debtIdentifier (address _destination, address _token, uint16 _nonce) public view returns (bytes32) {
         return keccak256(abi.encode(address(this), _destination, _token, _nonce));
-    }
-
-
-    function onCollectDebt (address _token, uint256 _amount, bytes32 _id) external payable returns (bool) {
-        if (_token == address(0x0)) {
-            require(msg.value == _amount, "onCollectDebt: msg.value and amount must be equal for ETH");
-        }
-
-        bool result = deposit(_token, _amount);
-
-        emit DidOnCollectDebt(_id);
-        return result;
     }
 }

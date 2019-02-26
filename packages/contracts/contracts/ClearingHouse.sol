@@ -2,7 +2,7 @@ pragma solidity ^0.5.0;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/cryptography/ECDSA.sol";
-import "./vendor/SignerRole.sol";
+import "./SignerRole.sol";
 import "./Holding.sol";
 
 
@@ -52,6 +52,14 @@ contract ClearingHouse {
     }
 
     function clearDigest (address _partyA, address _partyB, bytes32 _idA, bytes32 _idB) public view returns (bytes32) {
-        return keccak256(abi.encode("cl", address(this), _partyA, _partyB, _idA, _idB));
+        bytes memory packed = abi.encode(
+            "cl",
+            address(this),
+            _partyA,
+            _partyB,
+            _idA,
+            _idB
+        );
+        return keccak256(packed);
     }
 }

@@ -5,7 +5,7 @@ export interface Debt {
   token: string,
   collectionAfter: BigNumber
   amount: BigNumber,
-  salt: string
+  nonce: string
 }
 
 export namespace Debt {
@@ -14,13 +14,13 @@ export namespace Debt {
     const token = r[1]
     const collectionAfter = r[2]
     const amount = r[3]
-    const salt = r[4]
+    const nonce = r[4]
     return {
       destination,
       token,
       collectionAfter,
       amount,
-      salt
+      nonce
     }
   }
 }

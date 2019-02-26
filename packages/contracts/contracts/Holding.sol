@@ -24,7 +24,7 @@ contract Holding is SignerRole, OwnerRole {
         address token;                   // Currency of debt
         uint256 collectionAfter;         // Creditor can claim debt after "collectionAfter" seconds
         uint256 amount;                  // Amount of debt
-        uint16  salt;                    // ID of debt
+        uint16  nonce;                   // ID of debt
     }
 
     State public _currentState;
@@ -40,7 +40,7 @@ contract Holding is SignerRole, OwnerRole {
     mapping (address => uint256) public balance;
 
     event DidDeposit(address indexed token, uint256 amount);
-    event DidAddDebt(address indexed destination, address indexed token, uint256 amount);
+    event DidAddDebt(address indexed destination, address indexed token, uint16 indexed nonce, uint256 amount);
     event DidCollect(address indexed destination, address indexed token, uint256 amount);
     event DidClose(address indexed destination, address indexed token, uint256 amount);
     event DidWithdraw(address indexed destination, address indexed token, uint256 amount);
@@ -205,7 +205,7 @@ contract Holding is SignerRole, OwnerRole {
     /// @param _destination Address of creditor
     /// @param _token Currency of debt
     /// @param _amount Value of debt
-    /// @param _salt ID of debt between creditor and debtor
+    /// @param _nonce ID of debt between creditor and debtor
     /// @param _settlementPeriod Time in seconds after that creditor can claim to return debt
     /// @param _sigDebtor Signature of debtor
     /// @param _sigCreditor Signature of creditor
@@ -213,7 +213,7 @@ contract Holding is SignerRole, OwnerRole {
         address payable _destination,
         address _token,
         uint256 _amount,
-        uint16 _salt,
+        uint16 _nonce,
         uint256 _settlementPeriod,
         bytes memory _sigDebtor,
         bytes memory _sigCreditor
@@ -229,7 +229,7 @@ contract Holding is SignerRole, OwnerRole {
         Holding creditor = Holding(_destination);
         require(creditor.isSigner(recoveredCreditor), "addDebt: Should be signed by creditor");
 
-        bytes32 debtID = debtIdentifier(_destination, _token, _salt);
+        bytes32 debtID = debtIdentifier(_destination, _token, _nonce);
 
         require(debts[debtID].collectionAfter == 0, "addDebt: Can not override existing");
 
@@ -237,13 +237,13 @@ contract Holding is SignerRole, OwnerRole {
             destination: _destination,
             token: _token,
             amount: _amount,
-            collectionAfter: block.timestamp + _settlementPeriod,
-            salt: _salt
+            collectionAfter: block.timestamp.add(_settlementPeriod),
+            nonce: _nonce
         });
 
         debtsSize = debtsSize.add(1);
 
-        emit DidAddDebt(_destination, _token, _amount);
+        emit DidAddDebt(_destination, _token, _nonce, _amount);
     }
 
     /// @notice Forgive a debt. Can be called by creditor.

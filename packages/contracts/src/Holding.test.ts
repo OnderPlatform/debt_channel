@@ -39,6 +39,7 @@ contract('Holding', accounts => {
   const ALIEN = accounts[5]
 
   const ETH_AS_TOKEN_ADDRESS = solUtils.nullAddress()
+  const NONCE = 0x125
 
   const ethProvider = new ethers.providers.JsonRpcProvider()
 
@@ -138,18 +139,22 @@ contract('Holding', accounts => {
       const digest = await instanceA.addDebtDigest(instanceB.address, token.address, amount, settlementPeriod)
       const signatureA = await signature(ALICE, digest)
       const signatureB = await signature(BOB, digest)
-      const salt = 0x125
-      const tx = await instanceA.addDebt(instanceB.address, token.address, amount, salt, settlementPeriod, signatureA, signatureB)
+      const tx = await instanceA.addDebt(instanceB.address, token.address, amount, NONCE, settlementPeriod, signatureA, signatureB)
       const block = await ethProvider.getBlock(tx.receipt.blockNumber)
 
       assert(contracts.Holding.isDidAddDebtEvent(tx.logs[0]))
-      const debtIdentifierResult = await instanceA.debtIdentifier(instanceB.address, token.address, salt)
+      assert.equal(tx.logs[0].args.destination, instanceB.address)
+      assert.equal(tx.logs[0].args.token, token.address)
+      assert.equal(tx.logs[0].args.nonce, NONCE)
+      assert.equal(tx.logs[0].args.amount.toNumber(), amount)
+
+      const debtIdentifierResult = await instanceA.debtIdentifier(instanceB.address, token.address, NONCE)
       const rawDebt = await instanceA.debts(debtIdentifierResult)
       const debt = Debt.fromContract(rawDebt)
       assert.equal(debt.amount.toString(), amount.toString())
       assert.equal(debt.destination, instanceB.address)
       assert.equal(debt.token, token.address)
-      assert.equal(debt.salt.toNumber(), salt)
+      assert.equal(debt.nonce.toNumber(), NONCE)
       assert.equal(debt.collectionAfter.toNumber(), block.timestamp + settlementPeriod)
     })
 
@@ -160,18 +165,17 @@ contract('Holding', accounts => {
       const digest = await instanceA.addDebtDigest(instanceB.address, token.address, amount, settlementPeriod)
       const signatureA = await signature(DELEGATE_ALICE, digest)
       const signatureB = await signature(BOB, digest)
-      const salt = 0x125
-      const tx = await instanceA.addDebt(instanceB.address, token.address, amount, salt, settlementPeriod, signatureA, signatureB)
+      const tx = await instanceA.addDebt(instanceB.address, token.address, amount, NONCE, settlementPeriod, signatureA, signatureB)
       const block = await ethProvider.getBlock(tx.receipt.blockNumber)
 
       assert(contracts.Holding.isDidAddDebtEvent(tx.logs[0]))
-      const debtIdentifierResult = await instanceA.debtIdentifier.call(instanceB.address, token.address, salt)
+      const debtIdentifierResult = await instanceA.debtIdentifier.call(instanceB.address, token.address, NONCE)
       const rawDebt = await instanceA.debts(debtIdentifierResult)
       const debt = Debt.fromContract(rawDebt)
       assert.equal(debt.amount.toString(), amount.toString())
       assert.equal(debt.destination, instanceB.address)
       assert.equal(debt.token, token.address)
-      assert.equal(debt.salt.toNumber(), salt)
+      assert.equal(debt.nonce.toNumber(), NONCE)
       assert.equal(debt.collectionAfter.toNumber(), block.timestamp + settlementPeriod)
     })
 
@@ -182,18 +186,17 @@ contract('Holding', accounts => {
       const digest = await instanceA.addDebtDigest(instanceB.address, token.address, amount, 0)
       const signatureA = await signature(ALICE, digest)
       const signatureB = await signature(DELEGATE_BOB, digest)
-      const salt = 0x125
-      const tx = await instanceA.addDebt(instanceB.address, token.address, amount, salt, settlementPeriod, signatureA, signatureB)
+      const tx = await instanceA.addDebt(instanceB.address, token.address, amount, NONCE, settlementPeriod, signatureA, signatureB)
       const block = await ethProvider.getBlock(tx.receipt.blockNumber)
 
       assert(contracts.Holding.isDidAddDebtEvent(tx.logs[0]))
-      const debtIdentifierResult = await instanceA.debtIdentifier.call(instanceB.address, token.address, salt)
+      const debtIdentifierResult = await instanceA.debtIdentifier.call(instanceB.address, token.address, NONCE)
       const rawDebt = await instanceA.debts(debtIdentifierResult)
       const debt = Debt.fromContract(rawDebt)
       assert.equal(debt.amount.toString(), amount.toString())
       assert.equal(debt.destination, instanceB.address)
       assert.equal(debt.token, token.address)
-      assert.equal(debt.salt.toNumber(), salt)
+      assert.equal(debt.nonce.toNumber(), NONCE)
       assert.equal(debt.collectionAfter.toNumber(), block.timestamp + settlementPeriod)
     })
 
@@ -201,9 +204,8 @@ contract('Holding', accounts => {
       const digest1 = await instanceA.addDebtDigest(instanceB.address, token.address, amount, 0)
       const signatureA = await signature(ALICE, digest1)
       const signatureB = await signature(BOB, digest1)
-      const salt = 0x125
-      await instanceA.addDebt(instanceB.address, token.address, amount, salt, settlementPeriod, signatureA, signatureB)
-      const debtIdentifierResult = await instanceA.debtIdentifier.call(instanceB.address, token.address, salt)
+      await instanceA.addDebt(instanceB.address, token.address, amount, NONCE, settlementPeriod, signatureA, signatureB)
+      const debtIdentifierResult = await instanceA.debtIdentifier.call(instanceB.address, token.address, NONCE)
       const rawDebt = await instanceA.debts(debtIdentifierResult)
       const debt = Debt.fromContract(rawDebt)
       assert.equal(debt.amount.toString(), amount.toString())
@@ -213,21 +215,19 @@ contract('Holding', accounts => {
       const digest2 = await instanceA.addDebtDigest(instanceB.address, token.address, amount2, 0)
       const signatureA2 = await signature(ALICE, digest2)
       const signatureB2 = await signature(BOB, digest2)
-      return assert.isRejected(instanceA.addDebt(instanceB.address, token.address, amount2, salt, settlementPeriod, signatureA2, signatureB2))
+      return assert.isRejected(instanceA.addDebt(instanceB.address, token.address, amount2, NONCE, settlementPeriod, signatureA2, signatureB2))
     })
 
     specify('not if sigMine is incorrect', async () => {
       const digest = await instanceA.addDebtDigest(instanceB.address, token.address, amount, 0)
       const signatureB = await signature(BOB, digest)
-      const salt = 0x125
-      return assert.isRejected(instanceA.addDebt(instanceB.address, token.address, amount, salt, settlementPeriod, signatureB, signatureB))
+      return assert.isRejected(instanceA.addDebt(instanceB.address, token.address, amount, NONCE, settlementPeriod, signatureB, signatureB))
     })
 
     specify('not if sigOther is incorrect', async () => {
       const digest = await instanceA.addDebtDigest(instanceB.address, token.address, amount, 0)
       const signatureA = await signature(ALICE, digest)
-      const salt = 0x125
-      return assert.isRejected(instanceA.addDebt(instanceB.address, token.address, amount, salt, settlementPeriod, signatureA, signatureA))
+      return assert.isRejected(instanceA.addDebt(instanceB.address, token.address, amount, NONCE, settlementPeriod, signatureA, signatureA))
     })
 
     specify('not if dismissed', async () => {
@@ -244,9 +244,8 @@ contract('Holding', accounts => {
       const digest = await instance.addDebtDigest(instanceB.address, token.address, amount, 0)
       const signatureA = await signature(ALICE, digest)
       const signatureB = await signature(DELEGATE_BOB, digest)
-      const salt = 0x125
 
-      return assert.isRejected(instance.addDebt(instanceB.address, token.address, amount, salt, settlementPeriod, signatureA, signatureB))
+      return assert.isRejected(instance.addDebt(instanceB.address, token.address, amount, NONCE, settlementPeriod, signatureA, signatureB))
     })
   })
 
@@ -583,8 +582,7 @@ contract('Holding', accounts => {
       const digest = await instanceA.addDebtDigest(instanceB.address, token.address, 100, 0)
       const signatureA = await signature(ALICE, digest)
       const signatureB = await signature(BOB, digest)
-      const salt = 0x125
-      await instanceA.addDebt(instanceB.address, token.address, 100, salt, 0, signatureA, signatureB)
+      await instanceA.addDebt(instanceB.address, token.address, 100, NONCE, 0, signatureA, signatureB)
 
       const retireDigest = await instanceA.retireDigest(instanceA.address)
       const signatureARetire = await signature(ALICE, retireDigest)
@@ -731,7 +729,6 @@ contract('Holding', accounts => {
   describe('.removeDebt', () => {
     const amount = 1000
     const settlementPeriod = 0
-    const salt = 0x125
 
     specify('happy case', async () => {
       await token.approve(instanceA.address, amount, {from: ALICE})
@@ -739,11 +736,11 @@ contract('Holding', accounts => {
       const digest = await instanceA.addDebtDigest(instanceB.address, token.address, amount, settlementPeriod)
       const signatureA = await signature(ALICE, digest)
       const signatureB = await signature(BOB, digest)
-      await instanceA.addDebt(instanceB.address, token.address, amount, salt, settlementPeriod, signatureA, signatureB)
+      await instanceA.addDebt(instanceB.address, token.address, amount, NONCE, settlementPeriod, signatureA, signatureB)
 
       const balanceBefore = await token.balanceOf(instanceB.address)
       const holdingBefore = await instanceB.balance(token.address)
-      const debtId = await instanceA.debtIdentifier.call(instanceB.address, token.address, salt)
+      const debtId = await instanceA.debtIdentifier.call(instanceB.address, token.address, NONCE)
       const collectDigest = await instanceA.collectDigest(debtId)
       const collectSignature = await signature(BOB, collectDigest)
       let tx = await instanceA.collectDebt(debtId, collectSignature)
@@ -762,7 +759,7 @@ contract('Holding', accounts => {
     })
 
     specify('not if no debt', async () => {
-      const debtIdentifierResult = await instanceA.debtIdentifier.call(instanceB.address, token.address, salt)
+      const debtIdentifierResult = await instanceA.debtIdentifier.call(instanceB.address, token.address, NONCE)
       const rawDebt = await instanceA.debts(debtIdentifierResult)
       const debt = Debt.fromContract(rawDebt)
       assert.equal(debt.amount.toNumber(), 0)
@@ -772,7 +769,7 @@ contract('Holding', accounts => {
   })
 
   describe('.debtIdentifier', () => {
-    specify('contains address, destination, token, salt', async () => {
+    specify('contains address, destination, token, nonce', async () => {
       const destination = instanceB.address
       const tokenAddress = token.address
       const nonce = 29

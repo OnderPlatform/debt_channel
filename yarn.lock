@@ -580,13 +580,6 @@
     bn.js "4.11.7"
     safe-buffer "^5.1.2"
 
-"@machinomy/types-eth-sig-util@^0.0.8":
-  version "0.0.8"
-  resolved "https://registry.yarnpkg.com/@machinomy/types-eth-sig-util/-/types-eth-sig-util-0.0.8.tgz#206cb46ff5cfef5226fe6cb7d8844972c1876c8c"
-  integrity sha512-S/rBKdMpyZclVtvNcZ0w4eLpEg96xPK+hMpfO5mlakdZbYHI4jfUAlnRGhUPFFx3CaH/y+zNQRkQett7KfZ/pQ==
-  dependencies:
-    "@machinomy/types-safe-buffer" "^0.0.1"
-
 "@machinomy/types-ethereumjs-abi@^1.0.0":
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/@machinomy/types-ethereumjs-abi/-/types-ethereumjs-abi-1.0.0.tgz#ad452ffd953d304f3ab922f039ede5a88a35c2d4"
@@ -594,11 +587,6 @@
   dependencies:
     ethereumjs-abi "https://github.com/ethereumjs/ethereumjs-abi"
     safe-buffer "^5.1.2"
-
-"@machinomy/types-ethereumjs-units@^0.0.2":
-  version "0.0.2"
-  resolved "https://registry.yarnpkg.com/@machinomy/types-ethereumjs-units/-/types-ethereumjs-units-0.0.2.tgz#6e508fa16a89893b1d8bf9977e6b4db34da0b6a3"
-  integrity sha1-blCPoWqJiTsdi/mXfmtNs02gtqM=
 
 "@machinomy/types-ethereumjs-util@^0.0.12":
   version "0.0.12"
@@ -609,11 +597,6 @@
     bn.js "^4.11.7"
     rlp "^2.0.0"
     safe-buffer "^5.1.2"
-
-"@machinomy/types-safe-buffer@^0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@machinomy/types-safe-buffer/-/types-safe-buffer-0.0.1.tgz#bf80d94a2cc90b9d8438749aa3542dbf7a1f72b0"
-  integrity sha1-v4DZSizJC52EOHSao1Qtv3ofcrA=
 
 "@machinomy/types-truffle-contract@^0.0.3":
   version "0.0.3"

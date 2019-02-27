@@ -12,9 +12,6 @@ jobs:
       - restore_cache:
           key: yarn-{{ checksum "yarn.lock" }}
       - run:
-          name: Install system dependencies
-          command: sudo apt-get install xsltproc
-      - run:
           name: Install project dependencies
           command: yarn install --pure-lockfile
       - save_cache:
@@ -34,8 +31,12 @@ jobs:
       - run:
           name: Check code style
           command: yarn lint
+      - run:
+          name: Report code coverage
+          command: yarn ci:coverage
+
 workflows:
   version: 2
-  test_and_deploy:
+  code-quality:
     jobs:
         - test

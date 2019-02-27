@@ -13,7 +13,9 @@
     "test": "lerna run test --stream",
     "lint": "lerna run lint --stream",
     "coverage": "lerna run coverage --stream $PKG",
-    "bootstrap": "lerna bootstrap"
+    "bootstrap": "lerna bootstrap",
+    "doc:html": "sphinx-build -M html docs/ docs/_build",
+    "doc:watch": "sphinx-autobuild docs/ docs/_build"
   },
   "devDependencies": {
     "lerna": "^3.6.0",

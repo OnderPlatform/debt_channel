@@ -1,3 +1,4 @@
 node_modules/
+docs/_build/
 lerna-debug.log
 yarn-error.log

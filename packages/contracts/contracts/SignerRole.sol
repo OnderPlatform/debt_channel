@@ -20,11 +20,6 @@ contract SignerRole {
         _signers.add(msg.sender);
     }
 
-    modifier onlySigner() {
-        require(isSigner(msg.sender), "00_WRONG_SIGNATURE");
-        _;
-    }
-
     function isSigner(address _address) public view returns (bool) {
         return _signers.has(_address);
     }

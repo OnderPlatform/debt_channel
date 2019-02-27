@@ -111,9 +111,10 @@ contract('ClearingHouse', accounts => {
       const signatureBAddDebt = await signature(BOB, digestAddDebt)
       await instanceA.addDebt(instanceB.address, token.address, amount, nonce, 0, signatureAAddDebt, signatureBAddDebt)
 
-      const digest = await instanceA.forgiveDigest(instanceB.address, token.address)
-      const signatureB = await signature(BOB, digest)
       const debtId = await instanceA.debtIdentifier(instanceB.address, token.address, nonce)
+
+      const digest = await instanceA.forgiveDigest(debtId)
+      const signatureB = await signature(BOB, digest)
       const tx = await instanceA.forgiveDebt(debtId, signatureB)
       assert(contracts.ClearingHouse.isDidForgiveEvent(tx.logs[0]))
       assert.equal(tx.logs[0].args.destination, instanceA.address)

@@ -36,7 +36,7 @@ jobs:
           command: yarn lint
       - run:
           name: Report code coverage
-          command: yarn coverage
+          command: yarn ci:coverage
 workflows:
   version: 2
   test_and_deploy:

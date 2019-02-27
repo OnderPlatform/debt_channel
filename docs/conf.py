@@ -19,9 +19,9 @@
 
 # -- Project information -----------------------------------------------------
 
-project = u'Onder'
+project = u'Debt Channels'
 copyright = u'2019, Onder'
-author = u'Onder'
+author = u'Sergey Ukustov <sergey.ukustov@onder.tech>, Andrei Riaskov <andrei.riaskov@onder.tech>'
 
 # The short X.Y version
 version = u''
@@ -77,13 +77,13 @@ pygments_style = None
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-import guzzle_sphinx_theme
+#import guzzle_sphinx_theme
 
-html_theme_path = guzzle_sphinx_theme.html_theme_path()
-html_theme = 'guzzle_sphinx_theme'
+#html_theme_path = guzzle_sphinx_theme.html_theme_path()
+html_theme = 'sphinx_rtd_theme'
 
 # Register the theme as an extension to generate a sitemap.xml
-extensions.append("guzzle_sphinx_theme")
+#extensions.append("sphinx_rtd_theme")
 
 # Guzzle theme options (see theme.conf for more information)
 html_theme_options = {

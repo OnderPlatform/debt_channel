@@ -263,7 +263,6 @@ contract Holding is SignerRole, OwnerRole {
     function forgiveDebt (bytes32 _id, bytes memory _signature) public {
         Debt memory debt = debts[_id];
         address payable destination = debt.destination;
-        address tokenContract = debt.token;
         Holding other = Holding(destination);
         bytes32 digest = ECDSA.toEthSignedMessageHash(forgiveDigest(_id));
         address recoveredOther = ECDSA.recover(digest, _signature);
@@ -315,7 +314,15 @@ contract Holding is SignerRole, OwnerRole {
         uint256 _settlementPeriod
     ) public view returns (bytes32)
     {
-        return keccak256(abi.encode("ad", address(this), _destination, _token, _amount, _settlementPeriod));
+        bytes memory pack = abi.encode(
+            "ad",
+            address(this),
+            _destination,
+            _token,
+            _amount,
+            _settlementPeriod
+        );
+        return keccak256(pack);
     }
 
     function debtIdentifier (address _destination, address _token, uint16 _nonce) public view returns (bytes32) {

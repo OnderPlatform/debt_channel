@@ -80,7 +80,7 @@ contract('Holding', accounts => {
       assert.equal(holdingBalanceBefore.toNumber(), 0)
       const balanceSizeBefore = await instanceA.balanceSize()
 
-      await web3.eth.sendTransaction({ from: ALICE, to: instanceA.address, value: amount })
+      web3.eth.sendTransaction({ from: ALICE, to: instanceA.address, value: amount })
 
       const holdingBalanceAfter = await instanceA.balance(ETH_AS_TOKEN_ADDRESS)
       assert.equal(holdingBalanceAfter.toString(), amount.toString())
@@ -151,7 +151,7 @@ contract('Holding', accounts => {
       const signatureA = await signature(ALICE, digest)
       const signatureB = await signature(BOB, digest)
       const tx = await instanceA.addDebt(instanceB.address, token.address, amount, NONCE, settlementPeriod, signatureA, signatureB)
-      const block = await web3.eth.getBlock(tx.receipt.blockNumber)
+      const block = await web3.eth.getBlock(tx.receipt.blockNumber) // tslint:disable-line await-promise
 
       const debtId = await instanceA.debtIdentifier(instanceB.address, token.address, NONCE)
 
@@ -176,7 +176,7 @@ contract('Holding', accounts => {
       const signatureA = await signature(DELEGATE_ALICE, digest)
       const signatureB = await signature(BOB, digest)
       const tx = await instanceA.addDebt(instanceB.address, token.address, amount, NONCE, settlementPeriod, signatureA, signatureB)
-      const block = await web3.eth.getBlock(tx.receipt.blockNumber)
+      const block = await web3.eth.getBlock(tx.receipt.blockNumber) // tslint:disable-line await-promise
 
       assert(contracts.Holding.isDidAddDebtEvent(tx.logs[0]))
       const debtIdentifierResult = await instanceA.debtIdentifier.call(instanceB.address, token.address, NONCE)
@@ -197,7 +197,7 @@ contract('Holding', accounts => {
       const signatureA = await signature(ALICE, digest)
       const signatureB = await signature(DELEGATE_BOB, digest)
       const tx = await instanceA.addDebt(instanceB.address, token.address, amount, NONCE, settlementPeriod, signatureA, signatureB)
-      const block = await web3.eth.getBlock(tx.receipt.blockNumber)
+      const block = await web3.eth.getBlock(tx.receipt.blockNumber) // tslint:disable-line await-promise
 
       assert(contracts.Holding.isDidAddDebtEvent(tx.logs[0]))
       const debtIdentifierResult = await instanceA.debtIdentifier.call(instanceB.address, token.address, NONCE)
@@ -430,7 +430,7 @@ contract('Holding', accounts => {
 
       const digest = await instanceA.withdrawDigest(BOB, ETH_AS_TOKEN_ADDRESS, withdrawal)
       const signatureA = await signature(ALICE, digest)
-      const balanceBefore = new BigNumber(await web3.eth.getBalance(BOB))
+      const balanceBefore = new BigNumber(await web3.eth.getBalance(BOB)) // tslint:disable-line await-promise
       const tx = await instanceA.withdraw(BOB, ETH_AS_TOKEN_ADDRESS, withdrawal, signatureA)
 
       assert(contracts.Holding.isDidWithdrawEvent(tx.logs[0]))
@@ -438,7 +438,7 @@ contract('Holding', accounts => {
       assert.equal(tx.logs[0].args.token, ETH_AS_TOKEN_ADDRESS)
       assert.equal(tx.logs[0].args.amount.toString(), withdrawal.toString())
 
-      const balanceAfter = new BigNumber(await web3.eth.getBalance(BOB))
+      const balanceAfter = new BigNumber(await web3.eth.getBalance(BOB)) // tslint:disable-line await-promise
       assert.equal(balanceAfter.minus(balanceBefore).toNumber(),
         withdrawal,
         'Subtract of balances must be equal to withdrawal')

@@ -16,6 +16,11 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
+from sphinx.highlighting import lexers
+
+from pygments_lexer_solidity import SolidityLexer
+lexers['solidity'] = SolidityLexer()
+
 
 # -- Project information -----------------------------------------------------
 
@@ -88,7 +93,7 @@ html_theme = 'sphinx_rtd_theme'
 # Guzzle theme options (see theme.conf for more information)
 html_theme_options = {
     # Set the name of the project to appear in the sidebar
-    "project_nav_name": "Project Name",
+#    "project_nav_name": "Project Name",
 }
 
 # Theme options are theme-specific and customize the look and feel of a theme

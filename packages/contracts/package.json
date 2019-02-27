@@ -24,6 +24,7 @@
     "test": "yarn build && yarn truffle:test",
     "prepublish": "yarn support:wrap && yarn build",
     "coverage": "solidity-coverage",
+    "ci:coverage": "yarn coverage && cat coverage/lcov.info | coveralls",
     "mintTestTokens": "yarn build && DEBUG=* node lib/MintTestTokens",
     "deployTestToken": "yarn build && DEBUG=* node lib/DeployTestToken"
   },

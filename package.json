@@ -12,12 +12,13 @@
     "build": "lerna run build --stream",
     "test": "lerna run test --stream",
     "lint": "lerna run lint --stream",
-    "coverage": "lerna run coverage --stream $PKG",
+    "ci:coverage": "lerna run ci:coverage --stream",
     "bootstrap": "lerna bootstrap"
   },
   "devDependencies": {
     "lerna": "^3.6.0",
     "wsrun": "^2.2.0",
-    "typescript": "^3.3.1"
+    "typescript": "^3.3.1",
+    "coveralls": "^3.0.3"
   }
 }

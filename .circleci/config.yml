@@ -34,6 +34,9 @@ jobs:
       - run:
           name: Check code style
           command: yarn lint
+      - run:
+          name: Report code coverage
+          command: yarn coverage
 workflows:
   version: 2
   test_and_deploy:

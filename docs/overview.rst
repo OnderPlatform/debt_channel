@@ -30,7 +30,7 @@ Things brings additional benefits:
 - the delegates could pay while never connecting to the blockchain.
 
 To implement this, we need a smart contract for a party that is able to track the claimed debts,
-and collects the repayments. Essentially it represents on-chain identity of a party.
+and collects the repayments. We call it *Holding*. Essentially it represents on-chain identity of a party.
 
 The contract supports following functions:
 

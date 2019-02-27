@@ -25,7 +25,8 @@ Currently supported:
 To be done later:
 ~~~~~~~~~~~~~~~~~
 
-* ERC-20 notification on transfer.
+* ERC-20 notification on transfer
+* Cloaking of the transfers using zero-knowledge proofs
 * Contract Interface according to `ERC 165`_
 * Link with Identity: `EIP 1484`_, `EIP 725`_
 * Meta transactions: `EIP 1077`_
@@ -57,4 +58,4 @@ To be done later:
    :maxdepth: 3
 
    overview
-   design
+   debt_design

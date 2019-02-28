@@ -4,6 +4,7 @@
 
 [![Build Status](https://img.shields.io/circleci/project/github/OnderPlatform/debt_channel/master.svg)](https://circleci.com/gh/OnderPlatform/debt_channel)
 [![Coverage Status](https://img.shields.io/coveralls/github/OnderPlatform/debt_channel/master.svg)](https://coveralls.io/github/OnderPlatform/debt_channel?branch=master)
+[![Documentation Status](https://readthedocs.com/projects/onder-debt-channels/badge/?version=latest)](http://debt-channels.onder.tech)
 
 Debt Channel is a kind of payment channels between parties with an established identity, where a party promises
 to repay at a later date, instead of funding a channel up front.
@@ -17,6 +18,8 @@ For debt channel, there is a recourse to a real, flesh world, so instead of doin
 payments a party may promise a debt to be repaid at a later date, and send it off-chain.
 
 The package contains smart contracts for Debt Channels.
+
+Documentation can be found on [Read The Docs](http://debt-channels.onder.tech).
 
 ## Installation
 

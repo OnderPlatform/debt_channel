@@ -12,6 +12,7 @@
     "build": "lerna run build --stream",
     "test": "lerna run test --stream",
     "lint": "lerna run lint --stream",
+    "coverage": "lerna run coverage --stream",
     "ci:coverage": "lerna run ci:coverage --stream",
     "bootstrap": "lerna bootstrap",
     "doc:html": "sphinx-build -M html docs/ docs/_build",

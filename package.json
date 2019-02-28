@@ -2,7 +2,7 @@
   "name": "@onder/debt-channel",
   "private": true,
   "version": "1.0.0",
-  "license": "UNLICENSED",
+  "license": "AGPL-3.0-only",
   "workspaces": {
     "packages": [
       "packages/*"

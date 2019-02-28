@@ -36,3 +36,16 @@ yarn test
 ```
 yarn coverage
 ```
+
+
+## Contributing
+
+1. Fork it (<https://github.com/onderPlatform/debt_channel/fork>)
+2. Create your feature branch (`git checkout -b feature/awesome`)
+3. Commit your changes (`git commit -am 'Add some awesome feature'`)
+4. Push to the branch (`git push origin feature/awesome`)
+5. Create a new Pull Request
+
+## License
+
+This project is licensed under the AGPL-3.0 License - see the [LICENSE.txt](LICENSE.txt) file for details.

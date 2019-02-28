@@ -1,6 +1,6 @@
 # Debt Channels
 
-> L2 payment channels among parties with established identity.
+> L2 payment channels among parties with established identity. Built on Ethereum.
 
 [![Build Status](https://img.shields.io/circleci/project/github/OnderPlatform/debt_channel/master.svg)](https://circleci.com/gh/OnderPlatform/debt_channel)
 [![Coverage Status](https://img.shields.io/coveralls/github/OnderPlatform/debt_channel/master.svg)](https://coveralls.io/github/OnderPlatform/debt_channel?branch=master)
